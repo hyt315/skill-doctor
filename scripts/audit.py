@@ -54,6 +54,9 @@ LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 INLINE_PATH_RE = re.compile(r"`([^`\n]+)`")
 PATH_EXT_RE = re.compile(r"\.(md|py|txt|json|sh|js|ts|yaml|yml)$", re.IGNORECASE)
 ABS_PATH_RE = re.compile(r"[A-Za-z]:[/\\]+Users[/\\]|/home/[a-z]")
+CALIBER_RE = re.compile(
+    r"(上限|不超过|最多|禁止超过|超过|至少|最少)\s*(\d+)\s*(行|个|字符|token|分钟|秒|次|项|张)")
+CALIBER_CEIL_WORDS = {"上限", "不超过", "最多", "禁止超过", "超过"}
 ALLOW_MARK = "skill-doctor: allow"  # 行尾豁免标记，lint 惯例（同 eslint-disable）
 
 
@@ -466,6 +469,34 @@ def check_engineering(files: list[Path], root: Path, skill_text: str, findings: 
         findings.add("OK", "EN004", "无脚本目录，跳过依赖登记检查")
 
 
+def check_caliber_consistency(files: list[Path], root: Path, findings: Findings) -> None:
+    """坑 14 口径打架：同一量词与方向（上限/下限）的阈值在多个 md 文件数值不一。"""
+    seen: dict[tuple[str, str, int], str] = {}  # (方向, 量词, 数值) -> 首次出现位置
+    conflicts = []
+    for path in files:
+        if path.suffix != ".md":
+            continue
+        rel = str(path.relative_to(root))
+        for line_no, line in enumerate(read_text(path).splitlines(), 1):
+            if ALLOW_MARK in line:
+                continue
+            for m in CALIBER_RE.finditer(line):
+                word, num, unit = m.group(1), int(m.group(2)), m.group(3)
+                direction = "上限" if word in CALIBER_CEIL_WORDS else "下限"
+                key = (direction, unit, num)
+                where = f"{rel}:{line_no}（{word} {num} {unit}）"
+                if key in seen:
+                    continue  # 同值同口径，一致
+                sibling = [k for k in seen if k[0] == direction and k[1] == unit and k[2] != num]
+                if sibling:
+                    conflicts.append(f"{where} 与 {seen[sibling[0]]} 数值打架")
+                    continue
+                seen[key] = where
+    findings.add("WARN" if conflicts else "OK", "CK001",
+                 f"阈值口径打架（同一约束散落多处且数值不一，改一处忘其余）：{conflicts}"
+                 if conflicts else "md 文件间阈值口径一致")
+
+
 def find_regression_entry(root: Path) -> tuple[str, str, list[Path]]:
     """按优先级找回归入口：selftest 命名 > tests/ 目录 > Makefile test 目标。
 
@@ -583,6 +614,7 @@ REPAIR_HINTS = {
     "SEC001": "密钥移到环境变量/.private（并入 .gitignore），清洗历史",
     "DY001": "补 selftest.py（好夹具全绿+坏夹具被抓），参考审查方法论.md 负向用例节",
     "DY003": "修 selftest 本身或其夹具，退出码与结论文本对齐",
+    "CK001": "统一各文件阈值数值，或抽公共常量/单一来源文件，其余处指针引用",
 }
 
 
@@ -603,6 +635,7 @@ def main() -> int:
     skill_text = check_structure(root, findings)
     files = skill_files(root)
     check_references(root, skill_text, findings)
+    check_caliber_consistency(files, root, findings)
     check_silent_failures(files, root, findings)
     check_security(files, root, findings)
     check_engineering(files, root, skill_text, findings)

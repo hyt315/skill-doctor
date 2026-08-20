@@ -309,6 +309,20 @@ def main() -> int:
             raise RuntimeError(f"默认模式应 FAIL 且落盘报告：rc={result.returncode}")
         checks += 1
 
+        # 坑 14 回归：SKILL.md 与 references 阈值口径打架 → CK001 WARN
+        caliber = clone_good(tmp, "caliber-skill", GOOD_SELFTEST)
+        (caliber / "references" / "limits.md").write_text(
+            "# 限额\n\n引用文件最多 3 个，超了要合并。\n", encoding="utf-8")
+        caliber_text = (caliber / "SKILL.md").read_text(encoding="utf-8")
+        (caliber / "SKILL.md").write_text(
+            caliber_text.replace("引用存在的文件：",
+                                 "引用文件上限 5 个。引用存在的文件："),
+            encoding="utf-8")
+        rc, out = run_audit(caliber)
+        if rc != 0 or not any(l.startswith("WARN") and "[CK001]" in l for l in out.splitlines()):
+            raise RuntimeError(f"阈值口径打架应触发 CK001 WARN（坑 14）：\n{out}")
+        checks += 1
+
         # 触发评测回归：description 覆盖与全部用例必须全绿
         te = subprocess.run([sys.executable, str(TRIGGER_EVAL)],
                             capture_output=True, text=True, encoding="utf-8", errors="replace")
