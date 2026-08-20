@@ -383,8 +383,16 @@ def check_silent_failures(files: list[Path], root: Path, findings: Findings) -> 
                  f"含交互提示 input 调用（agent 非交互 shell 会挂死）：{interactive}" if interactive else "无交互提示 input 调用")
 
 
+FIXTURE_DIR_TOKENS = {"tests", "test", "fixtures", "examples", "evals"}
+
+
+def is_fixture_path(rel: str) -> bool:
+    """测试夹具/示例上下文：里面的假密钥是故意写的违规样本，不是真泄露。"""
+    return bool(FIXTURE_DIR_TOKENS.intersection(Path(rel).parts))
+
+
 def check_security(files: list[Path], root: Path, findings: Findings) -> None:
-    secrets, abs_paths = [], []
+    secrets, fixture_secrets, abs_paths = [], [], []
     for path in files:
         if path.suffix not in SCAN_EXT:
             continue
@@ -396,7 +404,8 @@ def check_security(files: list[Path], root: Path, findings: Findings) -> None:
             for pattern, desc in SECRET_PATTERNS:
                 m = pattern.search(line)
                 if m:
-                    secrets.append(f"{rel}:{line_no}（{desc}）")
+                    item = f"{rel}:{line_no}（{desc}）"
+                    (fixture_secrets if is_fixture_path(rel) else secrets).append(item)
         if not block_allowed(text, "SEC002"):
             for m in ABS_PATH_RE.finditer(text):
                 line_no = text[:m.start()].count("\n") + 1
@@ -404,6 +413,9 @@ def check_security(files: list[Path], root: Path, findings: Findings) -> None:
                     abs_paths.append(f"{rel}:{line_no}")
     findings.add("FAIL" if secrets else "OK", "SEC001",
                  f"疑似硬编码密钥：{secrets}" if secrets else "未发现硬编码密钥")
+    findings.add("WARN" if fixture_secrets else "OK", "SEC001",
+                 f"测试夹具/示例中的假密钥（人工确认为故意违规样本即可放行）：{fixture_secrets}"
+                 if fixture_secrets else "夹具上下文无密钥样式命中")
     findings.add("WARN" if abs_paths else "OK", "SEC002",
                  f"绝对个人路径（交付泄露风险，示例上下文可豁免）：{abs_paths}" if abs_paths else "未发现绝对个人路径")
 
@@ -454,8 +466,12 @@ def check_engineering(files: list[Path], root: Path, skill_text: str, findings: 
         findings.add("OK", "EN004", "无脚本目录，跳过依赖登记检查")
 
 
-def find_selftest(root: Path) -> Path | None:
-    """按优先级找被审技能的回归入口：scripts/selftest > 根 selftest > scripts/selftest* > test_*。"""
+def find_regression_entry(root: Path) -> tuple[str, str, list[Path]]:
+    """按优先级找回归入口：selftest 命名 > tests/ 目录 > Makefile test 目标。
+
+    只认 selftest 一种命名会误伤用 pytest/tests/ 布局的技能（坑库坑 25）。
+    返回 (kind, 描述, 负向特征扫描文件列表)；找不到返回 ("none", "", [])。
+    """
     candidates = [root / "scripts" / "selftest.py", root / "selftest.py"]
     scripts_dir = root / "scripts"
     if scripts_dir.is_dir():
@@ -463,23 +479,41 @@ def find_selftest(root: Path) -> Path | None:
     candidates += sorted(root.glob("test_*.py"))
     for candidate in candidates:
         if candidate.is_file():
-            return candidate
-    return None
+            return "selftest", str(candidate.relative_to(root)), [candidate]
+
+    for dir_name in ("tests", "test"):
+        tests_dir = root / dir_name
+        if tests_dir.is_dir():
+            test_files = sorted(p for p in tests_dir.rglob("*.py")
+                                if p.name != "__init__.py" and "__pycache__" not in p.parts)
+            if test_files:
+                return "tests", f"{dir_name}/（{len(test_files)} 个测试文件）", test_files
+
+    makefile = root / "Makefile"
+    if makefile.is_file() and re.search(r"^test\s*:", read_text(makefile), re.MULTILINE):
+        return "make", "Makefile test 目标", [makefile]
+    return "none", "", []
 
 
 def check_dynamic(root: Path, findings: Findings, enabled: bool) -> None:
-    selftest = find_selftest(root)
-    if selftest is None:
-        findings.add("FAIL", "DY001", "未找到 selftest（技能不可回归，改动无法验证）")
-        findings.add("WARN", "DY002", "无 selftest，负向用例无从谈起")
+    kind, desc, scan_files = find_regression_entry(root)
+    if kind == "none":
+        findings.add("FAIL", "DY001", "未找到回归入口（selftest/tests/Makefile test 均无，技能不可回归）")
+        findings.add("WARN", "DY002", "无回归入口，负向用例无从谈起")
         return
-    rel = selftest.relative_to(root)
-    findings.add("OK", "DY001", f"selftest 存在：{rel}")
+    findings.add("OK", "DY001", f"回归入口存在（{kind}）：{desc}")
 
-    if NEG_HINT_RE.search(read_text(selftest)):
-        findings.add("OK", "DY002", "selftest 含负向用例特征（破坏/抽掉/should-fail 类）")
+    # tests/ 布局文件可能很多，抽样扫描防大库拖慢（前 20 个足以判特征）
+    if any(NEG_HINT_RE.search(read_text(p)) for p in scan_files[:20]):
+        findings.add("OK", "DY002", f"{kind} 入口含负向用例特征（破坏/抽掉/should-fail 类）")
     else:
-        findings.add("WARN", "DY002", "selftest 未见负向用例特征——门可能名义存在实际放行，人工抽查关键门")
+        findings.add("WARN", "DY002", f"{kind} 入口未见负向用例特征——门可能名义存在实际放行，人工抽查关键门")
+
+    if kind != "selftest":
+        findings.add("INFO", "DY003", f"非 selftest 入口（{kind}），动态实跑请人工执行其回归命令")
+        return
+    selftest = scan_files[0]
+    rel = selftest.relative_to(root)
 
     if not enabled:
         findings.add("INFO", "DY003", "动态实跑未开启（加 --dynamic 真跑 selftest）")

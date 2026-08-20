@@ -205,6 +205,36 @@ def main() -> int:
             raise RuntimeError(f"无 selftest 应 DY001 FAIL：\n{out}")
         checks += 1
 
+        # 坑 25 回归：tests/ 布局（无 selftest.py）应识别为回归入口，DY001 不再误判 FAIL
+        pytest_layout = tmp / "pytest-skill"
+        (pytest_layout / "tests").mkdir(parents=True)
+        (pytest_layout / "SKILL.md").write_text(
+            "---\nname: pytest-skill\ndescription: pytest 布局夹具。当用户要求演示时使用。\n---\n正文\n",
+            encoding="utf-8")
+        (pytest_layout / "tests" / "verify_core.py").write_text(
+            "# 负向用例：篡改输入应被拦\ndef test_tamper():\n    assert True\n",
+            encoding="utf-8")
+        rc, out = run_audit(pytest_layout)
+        if rc != 0 or "FAIL [DY001]" in out or "回归入口存在（tests）" not in out:
+            raise RuntimeError(f"tests/ 布局应识别为回归入口（坑 25）：\n{out}")
+        if not any(l.startswith("OK") and "[DY002]" in l for l in out.splitlines()):
+            raise RuntimeError(f"tests/ 含负向特征字样应 DY002 OK：\n{out}")
+        checks += 1
+
+        # 坑 26 回归：tests/ 夹具里的假密钥应 SEC001 WARN 而非 FAIL
+        # 夹具只含密钥违规（BAD_LEAK 会带进裸 except 干扰 SF001a，故单独拼）
+        fixture_leak = clone_good(tmp, "fixture-leak-skill", GOOD_SELFTEST)
+        (fixture_leak / "tests").mkdir()
+        (fixture_leak / "tests" / "test_secret_gate.py").write_text(
+            "# 负向用例：此假密钥应降级 WARN\ndef test_gate():\n    return True\n"
+            + 'key = "' + "sk-" + "b" * 28 + '"\n',
+            encoding="utf-8")
+        rc, out = run_audit(fixture_leak)
+        if rc != 0 or any(l.startswith("FAIL") and "[SEC001]" in l for l in out.splitlines()) \
+                or not any(l.startswith("WARN") and "[SEC001]" in l for l in out.splitlines()):
+            raise RuntimeError(f"tests/ 假密钥应降级 WARN（坑 26）：\n{out}")
+        checks += 1
+
         # 动态层负向：selftest 崩溃 → DY003 FAIL（疑似崩溃）
         crash = clone_good(tmp, "crash-skill", CRASH_SELFTEST)
         rc, out = run_audit(crash, "--dynamic")
