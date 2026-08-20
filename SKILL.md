@@ -30,7 +30,7 @@ description: 审查任意 AI Agent 技能目录（SKILL.md/scripts/references）
 
 **步骤1 盘点**：列出技能全部文件（SKILL.md/scripts/references/assets 逐个登记），读 SKILL.md 了解其自述结构（阶段划分、产物清单、校验脚本名）。结构本身异常（嵌套 SKILL.md、引用不存在的文件）由步骤2 的静态检查抓。
 
-**步骤2 静态**：`python <本技能>/scripts/audit.py <被审技能目录>`，覆盖六类检查（结构合规/引用一致/静默失效/安全卫生/脚本工程/动态实跑），规则与级别见 `references/静态规则清单.md`。产出 ERROR/WARN 清单。行尾注释 `# skill-doctor: allow` 豁免单行误报（夹具、示例上下文用）；文件级启发式（SF002/SEC002/SF005/SF006）的正则字面量类确证误报，用 `skill-doctor: allow-block 规则码` 豁免整个文件该规则。改动本技能后跑 `scripts/selftest.py` 回归（好夹具全绿 + 坏夹具逐规则被抓）。
+**步骤2 静态**：`python <本技能>/scripts/audit.py <被审技能目录>`，覆盖七类检查（结构合规/引用一致/口径一致/静默失效/安全卫生/脚本工程/动态实跑），规则与级别见 `references/静态规则清单.md`。产出 ERROR/WARN 清单。行尾注释 `# skill-doctor: allow` 豁免单行误报（夹具、示例上下文用）；文件级启发式（SF002/SEC002/SF005/SF006）的正则字面量类确证误报，用 `skill-doctor: allow-block 规则码` 豁免整个文件该规则。改动本技能后跑 `scripts/selftest.py` 回归（好夹具全绿 + 坏夹具逐规则被抓）。
 
 **步骤3 动态**：`python <本技能>/scripts/audit.py <被审技能目录> --dynamic` 自动实跑被审技能的 selftest（默认不跑，防副作用；先确认其 selftest 只在临时目录/夹具上操作）。实跑覆盖：存在性、负向用例特征、退出码与结论一致性。若 selftest 缺失或实跑失败按报告修复路径处理；仍需人工做的：记录环境（Python 版本、OS）、审查 selftest 作用域是否只读。
 
@@ -39,6 +39,13 @@ description: 审查任意 AI Agent 技能目录（SKILL.md/scripts/references）
 **步骤5 坑库**：逐条对照 `references/坑库.md`，每条坑都有"检查方法"，能脚本化的已并入 audit.py，需要人工判断的在此步过。
 
 **步骤6 报告**：写 `audit-report.txt` 到被审技能目录，格式：逐项检查结果（OK/WARN/FAIL + 证据）→ 问题清单（每项附最小修复路径）→ 整体策略（单项走最短路；多项并存取最深根因）。
+
+## 自审与互审
+
+- **改本技能后**：`python scripts/selftest.py`（负向夹具逐规则回归）+ `python scripts/trigger_eval.py`（触发边界回归），两者全绿才算完
+- **改 description**：必须过 `evals/trigger_cases.json` 全家族用例；新增触发场景同步补用例进该文件
+- **交叉互审**：可用外部技能检查器（如 yao-meta-skill 的 context_sizer/governance_check/resource_boundary_check）审本技能取第三方视角信号；其打包专属口径（agents/interface.yaml 等）不适用，忽略不硬凑
+- **治理元数据**：`manifest.json`（owner/cadence/tier），版本随功能演进递增
 
 ## 分级修复决策
 
