@@ -1,0 +1,53 @@
+{
+  "threshold": 2,
+  "_comment": "trigger_eval 的概念配置与用例集。positive 概念须被 SKILL.md description 覆盖（覆盖缺口=description 退化）；负例/近邻例靠 negative 概念压分。改 description 前后各跑一遍，家族 pass rate 掉了就是触发边界退化。",
+  "concepts": {
+    "skill_object": {
+      "kind": "positive",
+      "weight": 3,
+      "terms": ["技能", "skill", "SKILL.md"]
+    },
+    "audit_action": {
+      "kind": "positive",
+      "weight": 2,
+      "terms": ["审查", "体检", "audit", "审一审", "把把脉"]
+    },
+    "regression_action": {
+      "kind": "positive",
+      "weight": 2,
+      "terms": ["回归验证", "回归一遍", "自测", "selftest", "改完之后验证"]
+    },
+    "broken_signal": {
+      "kind": "positive",
+      "weight": 2,
+      "terms": ["跑不通", "走不通", "静默失效", "流程挂了", "没反应了"]
+    },
+    "doc_only": {
+      "kind": "negative",
+      "weight": 2,
+      "terms": ["总结", "翻译", "摘要", "summarize", "translate", "改写文章"]
+    },
+    "code_context": {
+      "kind": "negative",
+      "weight": 2,
+      "terms": ["函数", "这段代码", "bug", "性能", "合同", "周报"]
+    }
+  },
+  "cases": [
+    {"text": "帮我审查一下这个技能目录，看看结构合不合规", "expect": "trigger", "family": "audit_request"},
+    {"text": "给我这个 skill 做个全身体检", "expect": "trigger", "family": "audit_request"},
+    {"text": "audit 一下这个 SKILL.md 的引用有没有断链", "expect": "trigger", "family": "audit_request"},
+    {"text": "技能改完了，帮我回归验证一下没改坏", "expect": "trigger", "family": "regression"},
+    {"text": "跑一下自测，确认 selftest 还是绿的", "expect": "trigger", "family": "regression"},
+    {"text": "我这个技能流程跑不通，帮我看看卡在哪", "expect": "trigger", "family": "broken_flow"},
+    {"text": "技能好像静默失效了，文档说的和实际做的不一样", "expect": "trigger", "family": "broken_flow"},
+    {"text": "总结一下这篇文章的要点", "expect": "no_trigger", "family": "doc_only"},
+    {"text": "把这份文档翻译成英文", "expect": "no_trigger", "family": "doc_only"},
+    {"text": "帮我改写这段文案，让它更口语化", "expect": "no_trigger", "family": "doc_only"},
+    {"text": "帮我 review 这段 Python 代码有没有 bug", "expect": "no_trigger", "family": "code_near_neighbor"},
+    {"text": "优化这个函数的性能", "expect": "no_trigger", "family": "code_near_neighbor"},
+    {"text": "帮我看看这份合同有没有坑", "expect": "no_trigger", "family": "code_near_neighbor"},
+    {"text": "给我的项目写几个单元测试", "expect": "no_trigger", "family": "code_near_neighbor"},
+    {"text": "帮我写个一次性脚本清理临时文件", "expect": "no_trigger", "family": "one_off"}
+  ]
+}

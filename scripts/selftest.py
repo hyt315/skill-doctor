@@ -13,6 +13,7 @@ import tempfile
 from pathlib import Path
 
 AUDIT = Path(__file__).resolve().parent / "audit.py"
+TRIGGER_EVAL = Path(__file__).resolve().parent / "trigger_eval.py"
 
 GOOD_SKILL_MD = """---
 name: good-skill
@@ -306,6 +307,13 @@ def main() -> int:
                                 capture_output=True, text=True, encoding="utf-8", errors="replace")
         if result.returncode != 1 or not (bad / "audit-report.txt").is_file():
             raise RuntimeError(f"默认模式应 FAIL 且落盘报告：rc={result.returncode}")
+        checks += 1
+
+        # 触发评测回归：description 覆盖与全部用例必须全绿
+        te = subprocess.run([sys.executable, str(TRIGGER_EVAL)],
+                            capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if te.returncode != 0 or "RESULT PASS" not in te.stdout:
+            raise RuntimeError(f"触发评测应全绿：\n{te.stdout}\n{te.stderr}")
         checks += 1
 
     print(f"SELFTEST PASS ({checks} checks)")
