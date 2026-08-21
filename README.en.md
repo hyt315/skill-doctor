@@ -44,6 +44,12 @@ The four-piece toolkit:
 
 ### 🚀 Quick Start
 
+> ✨ **One-liner install into your AI agent**: paste this to your AI assistant and it will install itself:
+>
+> ```text
+> Please install the skill-doctor Skill: clone https://github.com/hyt315/skill-doctor into your skills directory (Claude Code: ~/.claude/skills/skill-doctor/; Codex: ~/.codex/skills/skill-doctor/; Cursor: ~/.cursor/skills/skill-doctor/), and verify that SKILL.md, references/, and scripts/ are all present. Whenever a skill needs to be reviewed or audited, follow the SKILL.md workflow and run the audit script with static + dynamic checks.
+> ```
+
 This is an AI Agent Skill — clone it into your assistant's skills directory.
 
 | Platform | Install |

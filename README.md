@@ -44,6 +44,12 @@
 
 ### 🚀 快速开始
 
+> ✨ **一句话装进 AI Agent**：把下面这段话直接发给你的 AI 助手，它会自动完成安装——
+>
+> ```text
+> 请安装 skill-doctor Skill：把 https://github.com/hyt315/skill-doctor 克隆到你的 skills 目录（Claude Code：~/.claude/skills/skill-doctor/；Codex：~/.codex/skills/skill-doctor/；Cursor：~/.cursor/skills/skill-doctor/），并确认 SKILL.md、references/、scripts/ 都在。以后遇到要审查/体检技能时，按 SKILL.md 的流程用审计脚本做静态 + 动态检查。
+> ```
+
 这是一个 AI Agent Skill——装到任意 AI 编程助手的 skills 目录即可使用。
 
 #### 安装（选你的平台）
