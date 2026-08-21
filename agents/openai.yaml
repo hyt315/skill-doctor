@@ -1,0 +1,11 @@
+interface:
+  display_name: Skill Doctor
+  short_description: Audit any AI Agent skill for silent failures and inconsistencies
+  default_prompt: Use $skill-doctor to audit and harden this skill before release.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
