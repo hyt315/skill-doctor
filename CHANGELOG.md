@@ -2,6 +2,20 @@
 
 本项目采用 [Conventional Commits](https://www.conventionalcommits.org/) 格式记录变更。
 
+## [1.2.0] - 2026-08-22
+
+### Added
+
+- **LK005 弱引用检测**：SKILL.md 对 references/ 文件的引导若只有"详见/可参考"类弱措辞、无明确读取时机，给 WARN——Agent Skills 规范规定 references 按需加载，措辞决定执行 AI 会不会真的去读（坑 27）。依据：agentskills.io 规范 + 官方 skill-creator（"linked with guidance on when to read them"、"explain why in lieu of heavy-handed MUSTs"）+ 官方 pdf 技能条件触发句式。
+- SKILL.md 新增「Reference Files」章节：按审查节点列出三个参考文件的读取时机与理由（机对机场景，条件触发式）。
+- 坑库回写坑 27「弱引用措辞导致 references 不被读」，目录新增"九、引导与发现类"。
+- selftest 新增 LK005 正反夹具（弱引用必须 WARN；强引导不报），并修正坑 14 断言锚点与新好夹具措辞的联动。
+
+### Changed
+
+- 步骤 4 的方法论引用升级为条件触发式（"做负向抽查前，先读……构造方法在里面"）。
+- 审查纪律加两条：报告引用规则/坑注明出处文件；未读对应文件不得标记步骤完成。
+
 ## [1.1.0] - 2026-08-20
 
 首个公开版本对应的功能状态（基于维护者提交历史整理）：

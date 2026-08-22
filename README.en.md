@@ -27,7 +27,7 @@ Your skill runs, the demo looks great — but is it actually reliable? **Skill D
 | 🔍 **35 static rules** | Frontmatter, reserved names, orphan references, conflicting thresholds, broad exception swallowing, hardcoded secrets, personal-path leaks — all numbered and traceable |
 | 🏃 **Dynamic runs** | Not just reading docs — actually runs the audited skill's selftest and verifies exit-code semantics match the printed conclusion |
 | 🎯 **Negative probes** | The most dangerous failure is a gate that exists on paper but passes everything: build breaking samples and verify gates actually block |
-| 🧠 **26-entry pitfall library** | Real-world failure patterns (symptom → root cause → fix → prevention → check method), continuously written back |
+| 🧠 **27-entry pitfall library** | Real-world failure patterns (symptom → root cause → fix → prevention → check method), continuously written back |
 | 📄 **Report on disk** | `audit-report.txt` written into the audited skill directory, item-by-item OK/WARN/FAIL |
 | 🛡️ **Zero-dep read-only** | Python standard library only; audit is read-only, `--dynamic` off by default to avoid side effects |
 
@@ -122,7 +122,7 @@ skill-doctor/
 ├── references/
 │   ├── 静态规则清单.md           # authoritative definitions of the 35 rules (Chinese)
 │   ├── 审查方法论.md             # full methodology: static → dynamic → negative (Chinese)
-│   └── 坑库.md                   # 26 real-world pitfalls, continuously updated (Chinese)
+│   └── 坑库.md                   # 27 real-world pitfalls, continuously updated (Chinese)
 ├── scripts/
 │   ├── audit.py                  # audit entry (--stdout / --dynamic)
 │   ├── selftest.py               # this skill's regression (good fixtures green + bad caught)
