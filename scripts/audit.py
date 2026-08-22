@@ -340,13 +340,19 @@ def check_references(root: Path, skill_text: str, findings: Findings) -> None:
     # 决定执行 AI 会不会真的去读；"详见/可参考"类弱措辞没有读取时机，模型不会自觉补读。
     if refs_dir.is_dir():
         strong_guidance = re.compile(
-            r"必读|先读|再读|完整阅读|完整读|读取时机|读取动作|何时读|逐条|对照|照抄|"
+            r"必读|先读|先查|再读|完整阅读|完整读|读取时机|读取动作|何时读|逐条|对照|照抄|"
             r"读[^。\n]{0,24}(节|定义|方法|清单|流程|全文)|(时|后|前)[，,：:]\s*读|"
             r"When\s+\w|If you need|\bMUST\b|follow its instructions",
             re.I,
         )
+        # 结构化信号：SKILL.md 有专门的参考文件章节（Reference Files/参考文档），
+        # 且文件在其中被列出（官方 webapp-testing 模式：文件 + 触发条件/用途清单）
+        section = re.search(r"(?ms)^##\s+(Reference Files|参考文档[^\n]*).*?(?=^##\s|\Z)", skill_text)
+        listed_in_section = set(re.findall(r"references/[\w\-]+\.md", section.group(0))) if section else set()
         weak_only = []
         for p in sorted(refs_dir.glob("*.md")):
+            if f"references/{p.name}" in listed_in_section:
+                continue
             mention_lines = [ln for ln in skill_text.splitlines() if p.name in ln]
             if not mention_lines:
                 continue  # 完全未提及由 LK004 管

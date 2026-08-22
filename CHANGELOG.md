@@ -2,6 +2,14 @@
 
 本项目采用 [Conventional Commits](https://www.conventionalcommits.org/) 格式记录变更。
 
+## [1.2.1] - 2026-08-22
+
+### Fixed
+
+- LK005 检测器两处修正：① 强引导正则补"先查"；② 新增结构化判定——SKILL.md 含「Reference Files/参考文档」专门章节且文件在其中被列出（官方 webapp-testing 模式：文件+触发条件清单）即视为合格引导。修复将合格技能（如 windows-cleanup-optimize 的"参考文档（按需加载）"章节）误报为弱引用的漏报。
+- 修复 listed 集合与文件名比对错位（完整路径 vs 裸文件名）导致结构化判定永不生效的 bug。
+
+
 ## [1.2.0] - 2026-08-22
 
 ### Added
