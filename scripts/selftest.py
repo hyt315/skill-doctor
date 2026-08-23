@@ -292,6 +292,31 @@ def main() -> int:
             raise RuntimeError(f"强引导不应报 LK005：\n{out}")
         checks += 2
 
+        # 坑 29 回归：md 资源被注入 NUL 字节必须 FAIL [EN006]。
+        # 注入点须在 ASCII 边界（文件头）——打在多字节汉字中间会整体变成解码失败，
+        # 走不到"控制字符"分支，测不到目标路径
+        nul_skill = clone_good(tmp, "nul-skill", GOOD_SELFTEST)
+        rules_md = nul_skill / "references" / "rules.md"
+        rules_md.write_bytes(b"\x00" + rules_md.read_bytes())
+        rc, out = run_audit(nul_skill)
+        if rc != 1 or not any(l.startswith("FAIL") and "[EN006]" in l for l in out.splitlines()):
+            raise RuntimeError(f"NUL 字节污染应 FAIL [EN006]（坑 29）：\n{out}")
+        checks += 1
+
+        # 坑 27 补充回归：「先读取资源」类祈使标题下列出 references 应视为结构化强引用，
+        # 不报 LK005（2026-08-22 源自 douyin 技能误报：正文措辞是中性的"读取"，但章节本身就是读取时机）
+        sectionref = tmp / "sectionref-skill"
+        (sectionref / "references").mkdir(parents=True)
+        (sectionref / "references" / "rules.md").write_text("# rules\n", encoding="utf-8")
+        (sectionref / "SKILL.md").write_text(
+            "---\nname: sectionref\ndescription: 当用户需要演示结构化引用章节时使用。\n---\n"
+            "## 先读取资源\n\n1. 读取 references/rules.md，获得规则。\n",
+            encoding="utf-8")
+        rc, out = run_audit(sectionref)
+        if "WARN [LK005]" in out:
+            raise RuntimeError(f"先读类标题下的结构化引用不应报 LK005：\n{out}")
+        checks += 1
+
         bad = build_bad(tmp)
         rc, out = run_audit(bad)
         if rc != 1 or "RESULT FAIL" not in out:

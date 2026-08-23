@@ -341,14 +341,13 @@ def check_references(root: Path, skill_text: str, findings: Findings) -> None:
     if refs_dir.is_dir():
         strong_guidance = re.compile(
             r"必读|先读|先查|再读|完整阅读|完整读|另读|通读|读取时机|读取动作|何时读|逐条|对照|照抄|"
-            r"读[^。\n]{0,24}(节|定义|方法|清单|流程|全文)|读[：:]|(时|后|前)[，,：:]\s*读|"
-            r"按\s*`?references/|"
+            r"读[^。\n]{0,24}(节|定义|方法|清单|流程|全文)|读[：:]|(时|后|前)[，,：:]\s*读|按 `?references/|"
             r"When\s+\w|If you need|\bMUST\b|follow its instructions",
             re.I,
         )
-        # 结构化信号：SKILL.md 有专门的参考文件章节（Reference Files/参考文档/按需加载参考），
-        # 且文件在其中被列出（官方 webapp-testing 模式：文件 + 触发条件/用途清单）
-        section = re.search(r"(?ms)^##\s+(Reference Files|参考文档[^\n]*|按需加载参考[^\n]*).*?(?=^##\s|\Z)", skill_text)
+        # 结构化信号：SKILL.md 有专门的参考文件章节（Reference Files/参考文档/按需加载参考/
+        # 先读*、必读* 类祈使标题），且文件在其中被列出（官方 webapp-testing 模式：文件 + 触发条件/用途清单）
+        section = re.search(r"(?ms)^##\s+(Reference Files|参考文档[^\n]*|按需加载参考[^\n]*|先读[^\n]*|必读[^\n]*).*?(?=^##\s|\Z)", skill_text)
         listed_in_section = set(re.findall(r"references/[\w\-]+\.md", section.group(0))) if section else set()
         weak_only = []
         for p in sorted(refs_dir.glob("*.md")):
@@ -488,6 +487,32 @@ def check_engineering(files: list[Path], root: Path, skill_text: str, findings: 
             bom_files.append(str(path.relative_to(root)))
     findings.add("WARN" if bom_files else "OK", "EN003",
                  f"UTF-16 BOM 文件（脚本回读会失败）：{bom_files}" if bom_files else "无 UTF-16 文件")
+
+    # EN006 md 资源字节级污染：NUL 等控制字符会让宿主读取工具判为二进制拒读，
+    # 技能表面完整、运行时核心资源静默失效（坑 29）。UTF-16 BOM 归 EN003，不重复报。
+    polluted = []
+    for path in files:
+        if path.suffix != ".md":
+            continue
+        try:
+            data = path.read_bytes()
+        except OSError:
+            continue  # skill-doctor: allow（扫描器自身边界容错，非校验门）
+        rel = str(path.relative_to(root))
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            if data[:2] in (b"\xff\xfe", b"\xfe\xff"):
+                continue  # UTF-16 由 EN003 管
+            polluted.append(f"{rel}（无法按 UTF-8 解码）")
+            continue
+        bad = [i for i, ch in enumerate(text) if ord(ch) < 32 and ch not in "\n\r\t"]
+        if bad:
+            line = text.count("\n", 0, bad[0]) + 1
+            polluted.append(f"{rel}:{line}（控制字符 {text[bad[0]]!r}，宿主可能拒读）")
+    findings.add("FAIL" if polluted else "OK", "EN006",
+                 f"md 文件字节级污染（技能静默降级风险，坑 29）：{polluted}" if polluted
+                 else "md 文件无控制字符污染")
 
     scripts_dir = root / "scripts"
     if py_files and scripts_dir.is_dir():
@@ -646,6 +671,7 @@ REPAIR_HINTS = {
     "DY001": "补 selftest.py（好夹具全绿+坏夹具被抓），参考审查方法论.md 负向用例节",
     "DY003": "修 selftest 本身或其夹具，退出码与结论文本对齐",
     "CK001": "统一各文件阈值数值，或抽公共常量/单一来源文件，其余处指针引用",
+    "EN006": "定位并删除污染字节（扫 \\x00 等控制字符），重存干净 UTF-8 后用宿主读取工具复验；负向夹具注入须在 ASCII 边界（坑 29）",
 }
 
 
