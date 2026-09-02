@@ -1,16 +1,18 @@
+# 🩺 Skill Doctor / skill-doctor
+
 <div align="center">
 
-# 🩺 Skill Doctor
+**AI Agent skill auditor & linter with 37 static rules, dynamic execution, negative sample verification, and zero silent failures.**
 
-**Health checks for AI Agent skills: 35 static rules + dynamic selftest runs + negative-case probes, catching the silent "gate exists on paper, passes in practice" failures.**
+**给 AI Agent 技能做深度体检：37 项静态规则 + 动态实跑 + 负向抽查，专抓「门名义存在实际放行」的静默失效。**
 
-**English · [简体中文](./README.md)**
-
-[![License: MIT](https://img.shields.io/github/license/hyt315/skill-doctor)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/hyt315/skill-doctor?sort=semver)](https://github.com/hyt315/skill-doctor/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/hyt315/skill-doctor?sort=semver)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
-[![Tests](https://github.com/hyt315/skill-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/hyt315/skill-doctor/actions)
-[![Stars](https://img.shields.io/github/stars/hyt315/skill-doctor?style=social)](https://github.com/hyt315/skill-doctor/stargazers)
+[![Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Pure%20Python)-brightgreen)](SKILL.md)
+[![GitHub Stars](https://img.shields.io/github/stars/hyt315/skill-doctor?style=social)](https://github.com/hyt315/skill-doctor/stargazers)
+
+[English](./README.en.md) | [中文](./README.md)
 
 </div>
 
@@ -18,98 +20,105 @@
 
 ## 📖 What is this?
 
-Your skill runs, the demo looks great — but is it actually reliable? **Skill Doctor** is a meta-skill that audits AI Agent skills: **35 numbered static rules** (frontmatter compliance, reference links, caliber consistency, security hygiene, exit-code semantics…), **dynamic runs** of the audited skill's own selftest, and **negative-case probes** (samples that must be caught have to actually be caught). It quantifies the gap between "looks like it works" and "provably works". Every check has an ID (FM/SK/LK/CK/SF/SEC/EN/DY) and the report is written to disk for traceability.
+Your AI Agent skill runs and demos look great — but is it truly robust and production-ready?
+- Does it hide silent errors with broad `except Exception:` clauses?
+- Are there orphan references in `references/` that the LLM never reads?
+- Did local personal machine paths or API tokens accidentally leak into docs?
+- Does its test script exit with code 0 even when internal logic fails?
 
-### ✨ Core Features
+**`skill-doctor`** is a specialized meta-skill and CLI auditing tool for AI Agent skills. Through **37 comprehensive static rules** (frontmatter, references, exit code semantics, security), **dynamic test execution**, and **negative destructive sampling**, it accurately benchmarks skill quality and produces itemized, actionable audit reports.
 
-| Feature | Description |
-|---------|-------------|
-| 🔍 **35 static rules** | Frontmatter, reserved names, orphan references, conflicting thresholds, broad exception swallowing, hardcoded secrets, personal-path leaks — all numbered and traceable |
-| 🏃 **Dynamic runs** | Not just reading docs — actually runs the audited skill's selftest and verifies exit-code semantics match the printed conclusion |
-| 🎯 **Negative probes** | The most dangerous failure is a gate that exists on paper but passes everything: build breaking samples and verify gates actually block |
-| 🧠 **27-entry pitfall library** | Real-world failure patterns (symptom → root cause → fix → prevention → check method), continuously written back |
-| 📄 **Report on disk** | `audit-report.txt` written into the audited skill directory, item-by-item OK/WARN/FAIL |
-| 🛡️ **Zero-dep read-only** | Python standard library only; audit is read-only, `--dynamic` off by default to avoid side effects |
+---
+
+## ✨ Key Features
+
+| Core Module | Capabilities | Value Delivered |
+|---|---|---|
+| 🔍 **37 Comprehensive Rules** | Frontmatter, naming, reference integrity, exception hygiene, secret detection, path leaks | Covers FM/SK/LK/CK/SF/SEC/EN/DY with traceable rule IDs |
+| 🏃 **Dynamic Execution** | Executes the target skill's actual `selftest.py` to verify true exit codes | Eliminates false confidence from pure text checks |
+| 🎯 **Negative Sample Checks** | Injects invalid/destructive test samples to verify that guardrails truly block failures | Eliminates dangerous "guards that exist in name only" |
+| 🧠 **27 Real-World Pitfalls** | Curated catalog of anti-patterns collected across hundreds of audits | Prevents repeating known LLM workflow traps |
+| 📄 **Actionable Reports** | Standardized audit reports (`audit-report.txt`) with OK / WARN / INFO / FAIL statuses | Ready for CI pipelines and code reviews |
+| 🛡️ **Zero-Dependency Read-Only** | Pure Python standard library with 100% read-only analysis | Safe to run anywhere with zero side effects |
+
+---
+
+## 📊 Complete Audit Pipeline Architecture
+
+```
+[Input: Target AI Agent Skill directory]
+                         │
+      [Phase 1: Frontmatter & Structure Parsing] ──> Verify name, description, SKILL.md
+                         │
+      [Phase 2: 37 Full-Spectrum Static Rules] ────> Links, exception hygiene, secrets
+                         │
+      [Phase 3: Dynamic Selftest (--dynamic)] ─────> Execute target selftest, verify rc
+                         │
+      [Phase 4: Negative Destructive Checks] ──────> Verify guardrails block bad input
+                         │
+      [Phase 5: Actionable Report & Guidance] ─────> Output audit-report.txt
+```
 
 ---
 
 ## 🚀 Quick Start
 
-> ✨ **One-liner install into your AI agent**: paste this to your AI assistant and it will install itself:
->
-> ```text
-> Please install the skill-doctor Skill: clone https://github.com/hyt315/skill-doctor into your skills directory (Claude Code: ~/.claude/skills/skill-doctor/; Codex: ~/.codex/skills/skill-doctor/; Cursor: ~/.cursor/skills/skill-doctor/), and verify that SKILL.md, references/, and scripts/ are all present. Whenever a skill needs to be reviewed or audited, follow the SKILL.md workflow and run the audit script with static + dynamic checks.
-> ```
+This is an AI Agent Skill — use it directly in your AI assistant or run it as a standalone CLI tool.
 
-| Platform | Install |
-|----------|---------|
+### Option A: Paste one sentence into any Agent (recommended, most universal)
+
+Send this to your AI assistant and it will detect the platform and clone to the right skills directory:
+
+> Please install the skill-doctor skill: clone `https://github.com/hyt315/skill-doctor` into your skills directory (e.g. `~/.claude/skills/skill-doctor` or `~/.agents/skills/skill-doctor`) and confirm it works. When I ask to audit, review, or inspect a skill, use the 37 static and dynamic rules to evaluate its quality.
+
+### Option B: GitHub CLI 2.90+ (one command)
+
+```bash
+gh skill install hyt315/skill-doctor skill-doctor --agent claude-code --scope user
+```
+
+### Option C: Manual per-platform install
+
+| Platform | Command |
+|---|---|
 | **Claude Code** | `git clone https://github.com/hyt315/skill-doctor.git ~/.claude/skills/skill-doctor` |
 | **Codex** | `git clone https://github.com/hyt315/skill-doctor.git ~/.codex/skills/skill-doctor` |
 | **Cursor** | `git clone https://github.com/hyt315/skill-doctor.git ~/.cursor/skills/skill-doctor` |
+| **General Agents** | `git clone https://github.com/hyt315/skill-doctor.git ~/.agents/skills/skill-doctor` |
 
----
+### Option D: Run directly in terminal as a CLI
 
-## 💬 When to trigger
+```powershell
+# Run static audit on any skill
+python scripts/audit.py path/to/your-skill
 
-Say any of these to your AI agent:
+# Include dynamic selftest run
+python scripts/audit.py path/to/your-skill --dynamic
 
-- "Review this skill" / "give this skill a health check" / "audit it before release"
-- "Does this skill have hidden pitfalls?" / "why does my skill work only sometimes?"
-- "Run a quality gate before publishing this skill"
-
-## ⚙️ Prerequisites
-
-- **Python 3.10+** (standard library only, zero third-party deps)
-- Path to the skill directory you want audited
-- No admin rights needed; the audit is read-only and never modifies the audited skill
-
-## 📦 Deliverables
-
-```text
-audit-report.txt      — written into the audited skill directory: per-item OK/WARN/INFO/FAIL + RESULT verdict
-Dynamic run verdict   — did the selftest really pass, are exit codes honest (--dynamic)
-Negative probe result — do the critical gates actually block breaking samples (guided by the methodology)
+# Run skill-doctor's own regression test
+python scripts/selftest.py
 ```
 
 ---
 
-## 📚 Example: a real audit report
+## 🔒 Safety & Read-Only Principles
 
-```text
-Skill static audit report: network-slow-diagnosis
-Results:
-OK   [FM001] SKILL.md exists
-OK   [SK004] single SKILL.md in tree
-OK   [LK004] all references/ files linked from SKILL.md/scripts
-OK   [SEC001] no hardcoded secrets
-WARN [EN005] bash script missing set -euo pipefail
-INFO [DY003] non-selftest entry (tests), run its regression manually
-35 items: 33 passed, 2 WARN, 2 INFO, 0 FAIL
-RESULT PASS
-```
-
-Every line maps to a rule definition and fix guidance in `references/静态规则清单.md`.
+- **Strictly Read-Only**: Analysis reads target skill files without modifying or overwriting any code;
+- **Zero Network Calls**: All AST and regex rules run entirely offline;
+- **Sandboxed Execution**: Dynamic tests only run when `--dynamic` is explicitly supplied.
 
 ---
 
-## 📥 Download / Install
+## 📥 Download
 
-```bash
-# HTTPS
-git clone https://github.com/hyt315/skill-doctor.git
-
-# SSH
-git clone git@github.com:hyt315/skill-doctor.git
-
-# GitHub CLI
-gh repo clone hyt315/skill-doctor
-
-# ZIP
-# https://github.com/hyt315/skill-doctor/archive/refs/heads/main.zip
-
-# Single file (SKILL.md only)
-curl -O https://raw.githubusercontent.com/hyt315/skill-doctor/main/SKILL.md
-```
+| Method | Command / Link |
+|---|---|
+| **HTTPS** | `git clone https://github.com/hyt315/skill-doctor.git` |
+| **SSH** | `git clone git@github.com:hyt315/skill-doctor.git` |
+| **GitHub CLI** | `gh repo clone hyt315/skill-doctor` |
+| **ZIP** | [Download ZIP](https://github.com/hyt315/skill-doctor/archive/refs/heads/main.zip) |
+| **Tarball** | [Download Tar](https://github.com/hyt315/skill-doctor/archive/refs/heads/main.tar.gz) |
+| **Single file (SKILL.md)** | `curl -O https://raw.githubusercontent.com/hyt315/skill-doctor/main/SKILL.md` |
 
 ---
 
@@ -117,51 +126,48 @@ curl -O https://raw.githubusercontent.com/hyt315/skill-doctor/main/SKILL.md
 
 ```
 skill-doctor/
-├── SKILL.md                     # entry point (audit workflow + methodology routing)
-├── manifest.json
-├── references/
-│   ├── 静态规则清单.md           # authoritative definitions of the 35 rules (Chinese)
-│   ├── 审查方法论.md             # full methodology: static → dynamic → negative (Chinese)
-│   └── 坑库.md                   # 27 real-world pitfalls, continuously updated (Chinese)
+├── SKILL.md                          # Core skill definition and 37-rule workflow
+├── README.md                         # Chinese documentation
+├── README.en.md                      # English documentation
+├── CHANGELOG.md                      # Version history
+├── LICENSE                           # MIT License
+├── .gitignore                        # Git ignore rules
+├── CONTRIBUTING.md                   # Contribution guide
+├── CODE_OF_CONDUCT.md                # Code of conduct
+├── SECURITY.md                       # Security policy
+├── SUPPORT.md                        # Support channels
+├── manifest.json                     # Skill manifest
+├── agents/                           # Multi-agent metadata
 ├── scripts/
-│   ├── audit.py                  # audit entry (--stdout / --dynamic)
-│   ├── selftest.py               # this skill's regression (good fixtures green + bad caught)
-│   └── trigger_eval.py           # description trigger-boundary regression
-├── evals/                        # trigger evaluation cases
-├── LICENSE
-├── README.md  /  README.en.md  # bilingual docs (this file is English)
-└── .github/                     # Issue/PR templates + CI
+│   ├── audit.py                      # Main audit engine (37 rules + dynamic run)
+│   ├── validate_repo.py              # Validator
+│   └── selftest.py                   # Automated regression test runner
+└── references/                       # Rule catalog & pitfall references
 ```
 
 ---
 
-## ▶️ Quick Usage
+## ❓ FAQ
 
-```bash
-# Static audit, report written to <audited-skill-dir>/audit-report.txt
-python scripts/audit.py <skill-dir>
-
-# Also run the audited skill's dynamic selftest (off by default, avoids side effects)
-python scripts/audit.py <skill-dir> --dynamic
-
-# Required regressions after changing this skill
-python scripts/selftest.py
-python scripts/trigger_eval.py
-```
+- **Q: What is a "guard that exists in name only"?**  
+  A: When a test uses `try...except` but catches and swallows exceptions, causing broken code to report exit code 0 (pass).
+- **Q: Does this require third-party Python packages?**  
+  A: No. It is built entirely on Python 3.10+ standard libraries (`ast`, `re`, `pathlib`).
+- **Q: What is the difference between WARN and FAIL?**  
+  A: FAIL indicates blocking flaws (hardcoded secrets, fake exit codes); WARN indicates architectural recommendations (high token counts, deep nesting).
 
 ---
 
-## 🤝 Contributing / Feedback
+## 🤝 Contributing
 
-- Report bugs / suggestions: use the repo's Issue templates
-- Contribute: see [CONTRIBUTING.md](CONTRIBUTING.md); run `selftest.py` and `trigger_eval.py` before any PR
-- Submit a new pitfall: follow the pitfall format (symptom → root cause → fix → prevention → check) into `references/坑库.md`
-- Security: see [SECURITY.md](SECURITY.md) (private vulnerability reporting, not public issues)
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md). If this skill helped you, please give it a [Star ⭐](https://github.com/hyt315/skill-doctor/stargazers)!
 
 ---
 
-## 📜 License
+## 📄 License
 
-[MIT](LICENSE) © 2026 hyt315
+Licensed under the [MIT License](LICENSE).
+
+---
 
 > 🌏 **中文版: [README.md](./README.md)**
