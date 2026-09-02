@@ -177,6 +177,21 @@ skill-doctor/
 
 ---
 
+---
+
+## 🌐 GitHub 开源全生命周期协作矩阵 (Open Source Lifecycle Suite)
+
+面向独立开发者与开源团队的完整工具链闭环：
+
+| 阶段 / 角色 | 推荐技能 | 核心使命与能力 | GitHub 仓库 |
+|---|---|---|---|
+| 📦 **开源前准备** | [**`github-oss-prep`**](https://github.com/hyt315/github-oss-prep) | 自动化生成规范门面、中英双语 README、CI 工作流、社区资产与合规审计 | [hyt315/github-oss-prep](https://github.com/hyt315/github-oss-prep) |
+| 🩺 **质量体检** | [**`skill-doctor`**](https://github.com/hyt315/skill-doctor) | 50+ 项工业级静态规则 + 动态实跑自测，确保 Agent Skill 100% 满分无死角 | [hyt315/skill-doctor](https://github.com/hyt315/skill-doctor) |
+| ⚙️ **开源后运营** | [**`github-oss-ops`**](https://github.com/hyt315/github-oss-ops) | 智能分流 Issue、AI 垃圾防御、PR 辅助审查、GHSA 私有漏洞协同与发版全渠道广播 | [hyt315/github-oss-ops](https://github.com/hyt315/github-oss-ops) |
+| 🚀 **贡献者导航** | [**`github-oss-contribute`**](https://github.com/hyt315/github-oss-contribute) | 面向贡献者的全程向导：Fork 同步、Rebase 冲突消解、DCO 签名、反 AI Slop 质量门禁 | [hyt315/github-oss-contribute](https://github.com/hyt315/github-oss-contribute) |
+
+---
+
 ## ❓ 常见问题 (FAQ)
 
 - **Q: 什么是「门名义存在实际放行」？**  
