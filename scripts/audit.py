@@ -57,6 +57,11 @@ ABS_PATH_RE = re.compile(r"[A-Za-z]:[/\\]+Users[/\\]|/home/[a-z]")
 CALIBER_RE = re.compile(
     r"(上限|不超过|最多|禁止超过|超过|至少|最少)\s*(\d+)\s*(行|个|字符|token|分钟|秒|次|项|张)")
 CALIBER_CEIL_WORDS = {"上限", "不超过", "最多", "禁止超过", "超过"}
+GIT_TOKEN_URL_RE = re.compile(r"https?://[a-zA-Z0-9_.\-]+:[a-zA-Z0-9_.\-]+@github\.com|https?://ghp_[a-zA-Z0-9]{20,}@")
+SESSION_ID_RE = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b")
+HARD_DIRECTIVE_RE = re.compile(r"(?i)\b(must|never|strictly|forbidden)\b|必须|绝不|禁止|一律")
+IMAGE_LINK_RE = re.compile(r"!\[[^\]]*\]\(([^)\s]+)\)")
+
 ALLOW_MARK = "skill-doctor: allow"  # 行尾豁免标记，lint 惯例（同 eslint-disable）
 
 
@@ -241,6 +246,14 @@ def check_structure(root: Path, findings: Findings) -> str:
         findings.add("WARN", "SK005", f"SKILL.md 估算 {est_tokens} tokens，超 5000 建议拆 references/")
     else:
         findings.add("OK", "SK005", f"SKILL.md 估算 {est_tokens} tokens")
+
+    # TC002 硬指令词通胀检测
+    directives = len(HARD_DIRECTIVE_RE.findall(text))
+    if directives > 15:
+        findings.add("WARN", "TC002", f"SKILL.md 硬指令词（必须/绝不/禁止/一律）达 {directives} 处，存在 IFScale 遵循率衰减风险")
+    else:
+        findings.add("OK", "TC002", f"SKILL.md 硬指令词密度健康 ({directives} 处)")
+
     return text
 
 
@@ -443,6 +456,16 @@ def check_security(files: list[Path], root: Path, findings: Findings) -> None:
                 line_no = text[:m.start()].count("\n") + 1
                 if ALLOW_MARK not in text.splitlines()[line_no - 1]:
                     abs_paths.append(f"{rel}:{line_no}")
+    
+        if not block_allowed(text, "SEC004") and not is_fixture_path(rel):
+            for line_no, line in enumerate(text.splitlines(), 1):
+                if ALLOW_MARK in line:
+                    continue
+                if GIT_TOKEN_URL_RE.search(line):
+                    secrets.append(f"{rel}:{line_no}（Git Remote URL 内嵌 Token）")
+        if not is_fixture_path(rel) and path.name == "audit-report.txt":
+            findings.add("WARN", "SEC005", "发现审计临时报告 audit-report.txt 残留，请勿提交进 git")
+
     findings.add("FAIL" if secrets else "OK", "SEC001",
                  f"疑似硬编码密钥：{secrets}" if secrets else "未发现硬编码密钥")
     findings.add("WARN" if fixture_secrets else "OK", "SEC001",
@@ -474,6 +497,20 @@ def check_engineering(files: list[Path], root: Path, skill_text: str, findings: 
             sh_text = read_text(path)
             if "set -euo pipefail" not in sh_text and "set -eu" not in sh_text:
                 no_pipefail.append(str(path.relative_to(root)))
+    
+    # PL001 bash 脚本 CRLF 换行检测
+    crlf_sh = []
+    for path in files:
+        if path.suffix == ".sh":
+            try:
+                if b"\r" in path.read_bytes():
+                    crlf_sh.append(str(path.relative_to(root)))
+            except OSError:
+                pass
+    findings.add("FAIL" if crlf_sh else "OK", "PL001",
+                 f"Bash 脚本含 Windows CRLF (\r) 换行符（会导致 Linux CI 崩溃）：{crlf_sh}" if crlf_sh
+                 else "Bash 脚本换行符均为标准 LF")
+
     findings.add("WARN" if no_pipefail else "OK", "EN005",
                  f"bash 脚本缺 set -euo pipefail（管道失败静默风险）：{no_pipefail}" if no_pipefail else "bash 脚本均有 set -euo pipefail")
 
@@ -679,6 +716,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="skill-doctor 静态+动态检查器")
     parser.add_argument("target", help="被审技能目录")
     parser.add_argument("--stdout", action="store_true", help="只打印不落盘")
+
+    parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
+    parser.add_argument("--markdown", action="store_true", help="输出 GitHub Markdown 格式")
+
     parser.add_argument("--dynamic", action="store_true",
                         help="动态实跑被审技能 selftest（有副作用风险，确认安全后显式开启）")
     args = parser.parse_args()
@@ -701,6 +742,35 @@ def main() -> int:
     mode = "静态+动态（selftest 已实跑）" if args.dynamic else "静态层（动态实跑与负向用例见审查方法论.md）"
     env_note = f"环境：{sys.version.split()[0]} / {mode}"
     report, rc = render_report(root, findings, env_note)
+    
+    if args.json:
+        ok, warns, infos, fails = findings.counts()
+        total = len(findings.items)
+        out_dict = {
+            "target": root.name,
+            "result": "PASS" if fails == 0 else "FAIL",
+            "summary": {"total": total, "ok": ok, "warn": warns, "info": infos, "fail": fails},
+            "findings": [{"level": l, "code": c, "message": m} for l, c, m in findings.items]
+        }
+        import json
+        print(json.dumps(out_dict, ensure_ascii=False, indent=2))
+        return rc
+
+    if args.markdown:
+        ok, warns, infos, fails = findings.counts()
+        total = len(findings.items)
+        md_lines = [
+            f"## 🩺 技能审查报告：{root.name}",
+            f"- **审查结论**: `RESULT {'PASS' if fails == 0 else 'FAIL'}` (通过 {ok}/{total}, WARN {warns}, FAIL {fails})",
+            "",
+            "| 级别 | 规则码 | 检查项 |",
+            "|---|---|---|"
+        ]
+        for l, c, m in findings.items:
+            md_lines.append(f"| {l} | `{c}` | {m} |")
+        print("\n".join(md_lines))
+        return rc
+
     print(report, end="")
     if not args.stdout:
         (root / "audit-report.txt").write_text(report, encoding="utf-8")
