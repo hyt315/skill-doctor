@@ -210,11 +210,13 @@ skill-doctor/
 ├── assets/                           # 视觉资产
 │   └── banner.svg                    # 专属高清矢量 Hero Banner
 ├── evals/                            # 触发用例评测集
+├── tests/                            # 单元测试与 AST 语法树自校验
+│   └── test_skill.py                 # 标准单元测试入口（含 AST 语法完整性断言）
 ├── scripts/
 │   ├── audit.py                      # 核心审计引擎（四大形态 + 50+规则 + 多格式导出）
 │   ├── evolve.py                     # 迭代进化引擎（SEI五维评估 + 方案生成 + 脚手架注入）
 │   ├── trigger_eval.py               # 触发边界评测脚本
-│   └── selftest.py                   # 自动化回归自测脚本（27 项全面回归）
+│   └── selftest.py                   # 自动化回归自测脚本（28 项全面回归）
 └── references/                       # 规则清单、通病坑库与方法论
     ├── 静态规则清单.md                # 50+ 项工业级规则全览
     ├── 坑库.md                        # 50+ 条真实踩坑与避坑对策（含坑 44-50）

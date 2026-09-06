@@ -210,11 +210,13 @@ skill-doctor/
 ├── assets/                           # Visual assets
 │   └── banner.svg                    # Vector SVG Hero Banner
 ├── evals/                            # Trigger eval dataset
+├── tests/                            # Unit tests & AST syntax validation
+│   └── test_skill.py                 # Standard unit test entry (asserting AST syntax integrity)
 ├── scripts/
 │   ├── audit.py                      # Core audit engine (4 archetypes + 50+ rules + CLI export)
 │   ├── evolve.py                     # Skill evolution engine (SEI radar + roadmap + scaffold)
 │   ├── trigger_eval.py               # Trigger evaluation runner
-│   └── selftest.py                   # Automated regression test runner (27 checks)
+│   └── selftest.py                   # Automated regression test runner (28 checks)
 └── references/                       # Rule catalog, 50+ pitfalls & methodology
     ├── 静态规则清单.md                # 50+ Industrial rules overview
     ├── 坑库.md                        # 50+ Real-world pitfalls (incl. pitfalls 44-50)

@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import ast
 import subprocess
 import sys
 import tempfile
@@ -186,6 +187,16 @@ def clone_good(tmp: Path, name: str, selftest_src: str) -> Path:
 
 def main() -> int:
     checks = 0
+
+    # 0. 静态 AST 语法树自校验：确保自身所有 scripts/ 脚本符合标准 AST 语法
+    scripts_dir = Path(__file__).resolve().parent
+    for py_path in scripts_dir.glob("*.py"):
+        try:
+            ast.parse(py_path.read_text(encoding="utf-8", errors="ignore"))
+        except SyntaxError as e:
+            raise RuntimeError(f"AST 语法解析失败 {py_path.name}: {e}")
+    checks += 1
+
     with tempfile.TemporaryDirectory() as tmp_name:
         tmp = Path(tmp_name)
 
