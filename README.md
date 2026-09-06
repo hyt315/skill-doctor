@@ -39,10 +39,11 @@
 
 | 核心模块 | 覆盖功能与能力 | 带来价值与质量门禁 |
 |---|---|---|
-| 🤖 **四大形态专属审计引擎** | 智能适配纯提示词型、CLI 脚本增强型、MCP 协议端型、多阶段流水线型技能 | 告别一刀切，为不同架构形态提供定制化体检重点 |
+| 🤖 **五大形态专属审计引擎** | 智能适配纯提示词型、CLI 脚本增强型、MCP 协议端型、多阶段流水线型与复合型技能 | 告别一刀切，量体裁衣，因材施教，绝不强塞空脚本 |
+| 🌐 **四维深水区联网检索矩阵** | 自动提炼技能领域核心词，输出官方规范/RFC、生产级杀手坑、开源标杆与指标基线 4 维检索指令 | 驱动技能从浅层修补跃迁至深水区内容丰满与灵魂注入 |
 | 🔍 **50+ 项全维度静态规则** | 覆盖 FM 结构、LK/AS 链接与资产、SF 静默失效、SEC 深度安全、EN/PL 跨平台工程、CK/TC 口径与 Prompt 健康 | 逐项编号可追溯，精准拦截 CRLF、Token URL、连续连字符、宽捕获与断链 |
-| 🧬 **技能迭代进化引擎 (`evolve.py`)** | SEI 技能进化指数 (0-100)、演进方案自动生成 (`--plan`)、全套多文件脚手架一键注入 (`--scaffold-all` / `--scaffold-test`) | 驱动技能从脆弱的纯提示词升级为工业级 multi-file 系统 |
-| 🏃 **动态实跑真实验证** | 实际拉起并运行被审技能的自测脚本（`selftest.py`），核验退出码语义诚实度 | 杜绝靠纯文本检查产生的虚假安全感 |
+| 🧬 **技能迭代进化引擎 (`evolve.py`)** | 形态自适应 SEI 指数 (0-100)、演进方案自动生成 (`--plan`)、专属脚手架注入 (`--scaffold-test` / `--scaffold-prompt` / `--scaffold-all`) | 驱动技能从脆弱的单文件或浅层说明升级为工业级 multi-file 系统 |
+| 🏃 **动态实跑真实验证** | 实际拉起并运行被审技能的自测脚本（`selftest.py`）或评测集（`evals/`），核验退出码语义诚实度 | 杜绝靠纯文本检查产生的虚假安全感 |
 | 🎯 **负向破坏用例抽查** | 针对安全与质量门禁构造破坏样本，验证拦截门是否真的会阻断违规输入 | 专抓「门名义存在、实际放行」的最危险静默失效 |
 | 🧠 **50+ 条真实通病坑库** | 从数百次真实技能审查与重构实战中沉淀的典型坑库（现象 → 根因 → 修复 → 预防） | 持续沉淀最佳实践，避免重蹈覆辙 |
 | 📄 **多格式导出与自愈建议** | 支持 ANSI 控制台高亮看板、`--json` 机器可读、`--markdown` GitHub 表格导出 | 自带一键修复代码建议，无缝集成 CI 流水线 |
@@ -141,16 +142,22 @@ python scripts/audit.py path/to/your-skill --json
 python scripts/audit.py path/to/your-skill --markdown
 
 # --- 🚀 迭代进化引擎 (Skill Evolution Engine) ---
-# 评估技能进化度，计算 SEI (0-100) 并输出雷达分析
+# 1. 评估技能形态与进化度，计算 SEI (0-100) 并输出雷达分析
 python scripts/evolve.py path/to/your-skill --analyze
 
-# 自动生成针对该技能的《迭代进阶方案》Markdown
+# 2. 提取该领域核心词，自动生成四维深水区联网检索矩阵 (RFC/踩坑/标杆/基线)
+python scripts/evolve.py path/to/your-skill --research-plan
+
+# 3. 自动生成针对该技能的《迭代进阶方案》Markdown (含四维检索与形态工程)
 python scripts/evolve.py path/to/your-skill --plan -o evolution-plan.md
 
-# 一键注入标准自测套件 (tests/ 与 scripts/selftest.py，含 AST 校验与 DY002 负向夹具)
+# 4. 针对确定性脚本型技能：一键注入标准自测套件 (tests/ 与 scripts/selftest.py，含 AST 校验与 DY002 负向夹具)
 python scripts/evolve.py path/to/your-skill --scaffold-test
 
-# 一键注入完整多文件脚手架 (自测套件 + references/fact-card.md 标准事实卡)
+# 5. 针对纯提示词型技能：一键注入评测用例套件 (evals/trigger_cases.json，含对抗性与边界负向用例)
+python scripts/evolve.py path/to/your-skill --scaffold-prompt
+
+# 6. 一键注入完整多文件脚手架 (自测套件 + references/fact-card.md 标准事实卡)
 python scripts/evolve.py path/to/your-skill --scaffold-all
 
 # 运行 skill-doctor 自身的回归测试

@@ -589,10 +589,49 @@ def check_caliber_consistency(files: list[Path], root: Path, findings: Findings)
                  if conflicts else "md 文件间阈值口径一致")
 
 
+def detect_archetype(root: Path) -> tuple[str, str]:
+    """判定技能架构形态，返回 (code, description)。
+    
+    形态五分类：
+      - PROMPT: 纯提示词/认知型（零 scripts，靠提示词工程与评测集驱动）
+      - CLI: 确定性工具增强型（含 scripts/ 原生可执行脚本）
+      - MCP: 协议与生态端型（含 MCP 协议与 Tool Schema）
+      - PIPELINE: 多阶段流水线型（含 stages/ 阶段卡或显式状态机）
+      - HYBRID: 复合型（脚本工具 + 知识库/多阶段/评测集复合体）
+    """
+    scripts_dir = root / "scripts"
+    has_scripts = scripts_dir.is_dir() and any(
+        p.is_file() and p.suffix in (".py", ".ps1", ".sh", ".js", ".ts")
+        for p in scripts_dir.iterdir()
+    )
+    has_stages = (root / "stages").is_dir() or (root / "steps").is_dir()
+    has_mcp = (root / "mcp.json").is_file() or (root / ".mcp.json").is_file()
+
+    skill_md = root / "SKILL.md"
+    skill_text = read_text(skill_md) if skill_md.is_file() else ""
+    if not has_mcp and re.search(r"^\s*mcp:\s*|\bmcpServers\b", skill_text, re.M):
+        has_mcp = True
+
+    evals_dir = root / "evals"
+    refs_dir = root / "references"
+    has_refs = refs_dir.is_dir() and len(list(refs_dir.glob("*.md"))) >= 3
+
+    if has_scripts and (has_stages or has_mcp or evals_dir.is_dir() or has_refs):
+        return "HYBRID", "复合型（脚本工具 + 知识库/多阶段/评测集复合体）"
+    if has_mcp:
+        return "MCP", "协议与生态端型（含 MCP 协议与 Tool Schema）"
+    if has_stages:
+        return "PIPELINE", "多阶段流水线型（含分阶段卡或显式状态机）"
+    if has_scripts:
+        return "CLI", "确定性工具增强型（含 scripts/ 原生可执行脚本）"
+    return "PROMPT", "纯提示词/认知型（零 scripts，靠提示词工程与评测集驱动）"
+
+
 def find_regression_entry(root: Path) -> tuple[str, str, list[Path]]:
-    """按优先级找回归入口：selftest 命名 > tests/ 目录 > Makefile test 目标。
+    """按优先级找回归入口：selftest 命名 > tests/ 目录 > evals/ 目录 > Makefile test 目标。
 
     只认 selftest 一种命名会误伤用 pytest/tests/ 布局的技能（坑库坑 25）。
+    纯提示词型技能支持 evals/ 评测集作为回归入口。
     返回 (kind, 描述, 负向特征扫描文件列表)；找不到返回 ("none", "", [])。
     """
     candidates = [root / "scripts" / "selftest.py", root / "selftest.py"]
@@ -612,6 +651,13 @@ def find_regression_entry(root: Path) -> tuple[str, str, list[Path]]:
             if test_files:
                 return "tests", f"{dir_name}/（{len(test_files)} 个测试文件）", test_files
 
+    evals_dir = root / "evals"
+    if evals_dir.is_dir():
+        eval_files = sorted(p for p in evals_dir.glob("*")
+                            if p.is_file() and p.suffix in (".json", ".yaml", ".yml", ".md", ".txt"))
+        if eval_files:
+            return "evals", f"evals/（{len(eval_files)} 个评测用例集）", eval_files
+
     makefile = root / "Makefile"
     if makefile.is_file() and re.search(r"^test\s*:", read_text(makefile), re.MULTILINE):
         return "make", "Makefile test 目标", [makefile]
@@ -621,10 +667,19 @@ def find_regression_entry(root: Path) -> tuple[str, str, list[Path]]:
 def check_dynamic(root: Path, findings: Findings, enabled: bool) -> None:
     kind, desc, scan_files = find_regression_entry(root)
     if kind == "none":
-        findings.add("FAIL", "DY001", "未找到回归入口（selftest/tests/Makefile test 均无，技能不可回归）")
+        findings.add("FAIL", "DY001", "未找到回归入口（selftest/tests/evals/Makefile 均无，技能不可回归）")
         findings.add("WARN", "DY002", "无回归入口，负向用例无从谈起")
         return
     findings.add("OK", "DY001", f"回归入口存在（{kind}）：{desc}")
+
+    if kind == "evals":
+        has_neg = any(re.search(r"(should_trigger\s*:\s*false|negative|adversarial|反例|负向|对抗|越界|reject)", read_text(p), re.I) for p in scan_files)
+        if has_neg:
+            findings.add("OK", "DY002", "evals 评测集含负向反例/对抗性边界用例特征")
+        else:
+            findings.add("WARN", "DY002", "evals 评测集未见负向反例特征（建议补充 should_trigger: false 反例）")
+        findings.add("INFO", "DY003", "纯提示词评测集入口（evals），动态实跑请执行评测回放")
+        return
 
     # tests/ 布局文件可能很多，抽样扫描防大库拖慢（前 20 个足以判特征）
     if any(NEG_HINT_RE.search(read_text(p)) for p in scan_files[:20]):
@@ -667,10 +722,13 @@ def check_dynamic(root: Path, findings: Findings, enabled: bool) -> None:
         findings.add("FAIL", "DY003", f"selftest 实跑失败（rc={rc}）：{tail}")
 
 
-def render_report(root: Path, findings: Findings, env_note: str) -> tuple[str, int]:
+def render_report(root: Path, findings: Findings, env_note: str, archetype: tuple[str, str] | None = None) -> tuple[str, int]:
     ok, warns, infos, fails = findings.counts()
     total = len(findings.items)
-    lines = [f"技能静态审查报告：{root.name}", env_note, "", "检查结果："]
+    lines = [f"技能静态审查报告：{root.name}"]
+    if archetype:
+        lines.append(f"[Step 0] 识别技能形态：{archetype[0]}（{archetype[1]}）")
+    lines += [env_note, "", "检查结果："]
     for level, code, msg in findings.items:
         lines.append(f"{level:<4} [{code}] {msg}")
     lines.append("")
@@ -705,7 +763,7 @@ REPAIR_HINTS = {
     "LK002": "补齐缺失脚本或从文档删掉该命令",
     "LK005": "给该 reference 的链接补上读取时机（如'做 X 前先读 Y：Z 在里面'），并说明为什么值得读（坑 27）",
     "SEC001": "密钥移到环境变量/.private（并入 .gitignore），清洗历史",
-    "DY001": "补 selftest.py（好夹具全绿+坏夹具被抓），参考审查方法论.md 负向用例节",
+    "DY001": "补回归入口（CLI型补 selftest.py/tests/，纯提示词型运行 evolve.py --scaffold-prompt 补 evals/），参考审查方法论.md",
     "DY003": "修 selftest 本身或其夹具，退出码与结论文本对齐",
     "CK001": "统一各文件阈值数值，或抽公共常量/单一来源文件，其余处指针引用",
     "EN006": "定位并删除污染字节（扫 \\x00 等控制字符），重存干净 UTF-8 后用宿主读取工具复验；负向夹具注入须在 ASCII 边界（坑 29）",
@@ -729,6 +787,7 @@ def main() -> int:
         print(f"ERROR: 目录不存在 {root}")
         return 2
 
+    archetype = detect_archetype(root)
     findings = Findings()
     skill_text = check_structure(root, findings)
     files = skill_files(root)
@@ -741,13 +800,14 @@ def main() -> int:
 
     mode = "静态+动态（selftest 已实跑）" if args.dynamic else "静态层（动态实跑与负向用例见审查方法论.md）"
     env_note = f"环境：{sys.version.split()[0]} / {mode}"
-    report, rc = render_report(root, findings, env_note)
+    report, rc = render_report(root, findings, env_note, archetype)
     
     if args.json:
         ok, warns, infos, fails = findings.counts()
         total = len(findings.items)
         out_dict = {
             "target": root.name,
+            "archetype": {"code": archetype[0], "description": archetype[1]},
             "result": "PASS" if fails == 0 else "FAIL",
             "summary": {"total": total, "ok": ok, "warn": warns, "info": infos, "fail": fails},
             "findings": [{"level": l, "code": c, "message": m} for l, c, m in findings.items]
@@ -761,6 +821,7 @@ def main() -> int:
         total = len(findings.items)
         md_lines = [
             f"## 🩺 技能审查报告：{root.name}",
+            f"- **架构形态**: `[{archetype[0]}]` {archetype[1]}",
             f"- **审查结论**: `RESULT {'PASS' if fails == 0 else 'FAIL'}` (通过 {ok}/{total}, WARN {warns}, FAIL {fails})",
             "",
             "| 级别 | 规则码 | 检查项 |",

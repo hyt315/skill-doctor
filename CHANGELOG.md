@@ -2,6 +2,32 @@
 
 本项目采用 [Conventional Commits](https://www.conventionalcommits.org/) 格式记录变更。
 
+## [2.1.2] - 2026-09-06
+
+### 🚀 Feature: 五大架构形态智能自适应、四维深水区联网检索矩阵与纯提示词评测套件
+
+本次更新彻底告别审查一刀切与教条主义强塞脚本，将「形态智能自适应」与「四维深水区联网检索」确立为持续进化引擎的核心支柱：
+
+- **五大架构形态智能自适应 (Step 0 Profiling)**：
+  - 自动识别并适配 `PROMPT`（纯提示词/认知型）、`CLI`（确定性工具增强型）、`MCP`（协议生态端型）、`PIPELINE`（多阶段流水线型）与 `HYBRID`（复合型）五大形态；
+  - `audit.py` 报告首行显式输出 Step 0 形态探测结果，并在 `--json` 与 `--markdown` 中包含形态元数据；
+  - 纯提示词型技能支持 `evals/` 评测集作为合法回归入口，彻底免除 `DY001` 误判与强制编写 Python 脚本的硬伤；
+  - `evolve.py` 为 PROMPT 形态自适应切换评分维度至「指令工程与输出 Schema (20分)」与「评测集与反例对抗强度 (20分)」，合规纯提示词技能可正常获评 100/100 SEI。
+- **四维深水区联网检索矩阵 (`--research-plan`)**：
+  - 新增 `python scripts/evolve.py <path> --research-plan`，自动提炼技能领域核心词并输出 4 维深水区联网挖掘指令：
+    1. 底层原理与权威规范 (RFC & Specs)；
+    2. 生产级故障与深水杀手坑 (Killer Pitfalls)；
+    3. GitHub 顶级开源标杆 (Top OSS Repos)；
+    4. 客观指标基线与事实卡 (Metric Baselines)；
+  - 在 `--plan` 生成的 Markdown 实施方案中动态嵌入专属检索指令与资产沉淀指引。
+- **纯提示词评测脚手架注入 (`--scaffold-prompt`)**：
+  - 新增 `python scripts/evolve.py <path> --scaffold-prompt`，一键生成规范的 `evals/trigger_cases.json`，内置正向触发、负向边界与对抗性注入三类测试样本。
+- **实战通病坑库扩充至 52 项 (`references/坑库.md`)**：
+  - 新增坑 51（架构形态教条主义与强塞空脚本）；
+  - 新增坑 52（技能浅薄脆弱与闭门造车：缺乏深水区 RFC 规范与真实生产杀手坑检索）。
+- **自测套件扩充与自动化门禁**：
+  - `scripts/selftest.py` 回归检查扩充至 32 项，全面覆盖形态自适应检测、`evals/` 评测集判定与四维检索矩阵输出。
+
 ## [2.1.1] - 2026-09-06
 
 ### 🛠️ Optimization: 规范交付事实卡、严正对齐只读安全铁律与补齐AST测试闭环

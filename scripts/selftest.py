@@ -457,6 +457,50 @@ def main() -> int:
             raise RuntimeError(f"evolve --scaffold-all 应生成完整脚手架：\n{out_all}")
         checks += 1
 
+        # 7. evolve --research-plan 验证四维深水区检索生成
+        rc_res, out_res = run_evolve(scaffold_all_skill, "--research-plan")
+        if (rc_res != 0 or
+            "四维深水区联网检索矩阵" not in out_res or
+            "维度 1：底层原理与权威规范" not in out_res or
+            "维度 2：生产级故障与深水杀手坑" not in out_res):
+            raise RuntimeError(f"evolve --research-plan 应输出四维检索矩阵：\n{out_res}")
+        checks += 1
+
+        # 8. 纯提示词型技能与 --scaffold-prompt 验证
+        prompt_skill = tmp / "prompt-style-skill"
+        prompt_skill.mkdir(parents=True)
+        (prompt_skill / "SKILL.md").write_text(
+            "---\nname: prompt-style-skill\ndescription: 纯提示词规范技能。当用户要求格式统一时使用。\n---\n"
+            "# 规范\n\n## 示例 (Few-Shot)\n输入示例：x\n输出示例：X\n\n"
+            "## 边界约束\n严禁主观臆造未知字段。只读优先无破坏，修改建议须用户明确同意后手动执行。\n\n"
+            "### 📊 事实卡\n| 层级 | 检查项 | 测量实值 | 正常基线 | 判定结果 |\n|---|---|---|---|:---:|\n| L1 | 规范项 | 实测 | 基线 | 🟢 正常 |\n",
+            encoding="utf-8")
+        (prompt_skill / "references").mkdir(parents=True)
+        (prompt_skill / "references" / "guide.md").write_text("# 指南\n详见规范。\n", encoding="utf-8")
+        
+        rc_sp, out_sp = run_evolve(prompt_skill, "--scaffold-prompt")
+        if rc_sp != 0 or not (prompt_skill / "evals" / "trigger_cases.json").is_file():
+            raise RuntimeError(f"evolve --scaffold-prompt 应生成评测集：\n{out_sp}")
+        checks += 1
+
+        # 9. 验证 audit.py 识别纯提示词形态为 PROMPT 并以 evals 入口通过自测 (DY001/DY002 OK)
+        rc_pa, out_pa = run_audit(prompt_skill)
+        if (rc_pa != 0 or
+            "[Step 0] 识别技能形态：PROMPT" not in out_pa or
+            "回归入口存在（evals）" not in out_pa or
+            "evals 评测集含负向反例" not in out_pa or
+            "RESULT PASS" not in out_pa):
+            raise RuntimeError(f"audit.py 应识别 PROMPT 形态并以 evals 通过：\n{out_pa}")
+        checks += 1
+
+        # 10. 验证 evolve.py 自适应评分给予合规纯提示词技能 100/100 满分且不强塞脚本
+        rc_pe, out_pe = run_evolve(prompt_skill, "--analyze")
+        if (rc_pe != 0 or
+            "[PROMPT]" not in out_pe or
+            "综合进化指数 (SEI): 100 / 100" not in out_pe):
+            raise RuntimeError(f"evolve.py 应自适应给予合规 PROMPT 技能 100/100：\n{out_pe}")
+        checks += 1
+
     print(f"SELFTEST PASS ({checks} checks)")
     return 0
 

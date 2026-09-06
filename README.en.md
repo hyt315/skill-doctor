@@ -39,10 +39,11 @@ Your AI Agent skill runs and demos look great — but is it truly reliable and p
 
 | Core Module | Capabilities & Scope | Quality Gates & Delivered Value |
 |---|---|---|
-| 🤖 **4 Archetype Auditing Engines** | Tailored checks for Pure Prompt, Tool-Augmented CLI, MCP Protocol Server, and Multi-Stage Pipeline skills | Replaces one-size-fits-all checks with targeted architectural profiling |
+| 🤖 **5 Archetype Auditing Engines** | Tailored checks for Pure Prompt, Tool-Augmented CLI, MCP Protocol Server, Multi-Stage Pipeline, and Hybrid skills | Eliminates one-size-fits-all dogma; never forces dummy scripts onto cognitive prompt skills |
+| 🌐 **4D Deep Domain Research Matrix** | Extracts domain keywords to generate targeted queries for Official Specs/RFCs, Killer Outages, Top Repos, and Metric Baselines | Drives skill evolution from shallow tweaks to authoritative domain enrichment |
 | 🔍 **50+ Comprehensive Static Rules** | Covers FM structure, LK/AS links & assets, SF silent failures, SEC security, EN/PL cross-platform, CK/TC prompt health | Traceable rule IDs intercepting CRLF, Token URLs, consecutive hyphens, broad exceptions, and dead links |
-| 🧬 **Skill Evolution Engine (`evolve.py`)** | SEI index (0-100), automated evolution plans (`--plan`), and full multi-file scaffolding (`--scaffold-all` / `--scaffold-test`) | Drives skills from fragile prompt-only drafts into robust multi-file architectures |
-| 🏃 **Dynamic Execution Verification** | Executes target skill's actual `selftest.py` to verify exit code semantics and genuine test passes | Eliminates false confidence from pure text inspections |
+| 🧬 **Skill Evolution Engine (`evolve.py`)** | Adaptive SEI index (0-100), automated evolution plans (`--plan`), and tailored scaffolding (`--scaffold-test` / `--scaffold-prompt` / `--scaffold-all`) | Upgrades skills into robust multi-file architectures with genuine test suites |
+| 🏃 **Dynamic Execution Verification** | Executes target skill's actual `selftest.py` or `evals/` test suite to verify exit code semantics and genuine test passes | Eliminates false confidence from pure text inspections |
 | 🎯 **Negative Destructive Sampling** | Injects invalid/corrupted test samples to verify that guardrails truly block bad inputs | Eliminates dangerous "guards that exist in name only" |
 | 🧠 **50+ Real-World Pitfalls** | Curated catalog of anti-patterns collected across hundreds of skill audits (Symptom → Cause → Fix → Prevention) | Consolidates best practices to prevent repeated errors |
 | 📄 **Multi-Format Export & Auto-Fix** | Supports ANSI console summary, `--json` machine-readable output, and `--markdown` GitHub tables | Ready for CI pipelines with actionable code fix snippets |
@@ -141,16 +142,22 @@ python scripts/audit.py path/to/your-skill --json
 python scripts/audit.py path/to/your-skill --markdown
 
 # --- 🚀 Skill Evolution Engine ---
-# Evaluate Skill Evolution Index (SEI 0-100) and view gap radar
+# 1. Profile skill archetype and compute Skill Evolution Index (SEI 0-100)
 python scripts/evolve.py path/to/your-skill --analyze
 
-# Automatically generate customized evolution roadmap Markdown
+# 2. Extract domain keywords and generate 4D deep domain research matrix
+python scripts/evolve.py path/to/your-skill --research-plan
+
+# 3. Automatically generate customized evolution roadmap Markdown
 python scripts/evolve.py path/to/your-skill --plan -o evolution-plan.md
 
-# Scaffold standard test suite (tests/ and scripts/selftest.py with AST check and DY002 fixtures)
+# 4. For CLI / script skills: scaffold standard test suite (tests/ + scripts/selftest.py with AST check and DY002 fixtures)
 python scripts/evolve.py path/to/your-skill --scaffold-test
 
-# Scaffold complete multi-file architecture (tests/ + references/fact-card.md baseline)
+# 5. For pure prompt skills: scaffold evaluation suite (evals/trigger_cases.json with negative boundary cases)
+python scripts/evolve.py path/to/your-skill --scaffold-prompt
+
+# 6. Scaffold complete multi-file architecture (tests/ + references/fact-card.md baseline)
 python scripts/evolve.py path/to/your-skill --scaffold-all
 
 # Run skill-doctor's own regression test
