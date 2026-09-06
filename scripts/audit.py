@@ -43,7 +43,7 @@ DANGEROUS_CALL_PATTERNS = (
 )
 INTERACTIVE_INPUT_RE = re.compile(r"(?<![.\w])input\s*\(")
 SCAN_EXT = {".md", ".py", ".sh", ".js", ".ts", ".json", ".yaml", ".yml", ".txt", ".toml", ".cfg", ".ini"}
-SKIP_DIRS = {".git", ".private", "node_modules", "__pycache__", ".venv", "venv",
+SKIP_DIRS = {".git", ".private", ".doctor", "node_modules", "__pycache__", ".venv", "venv",
              "projects", "articles",  # 内容产物目录，非技能本体
              "工作区", "workspace"}  # 显式嵌套技能工作区：里面的 SKILL.md 是有意为之，不算误识别
 BROAD_EXCEPT_RE = re.compile(r"except\s*(Exception|BaseException)?\s*$")
@@ -348,37 +348,37 @@ def check_references(root: Path, skill_text: str, findings: Findings) -> None:
         else:
             findings.add("OK", "LK004", "references/ 文件均被 SKILL.md/脚本提及")
 
-    # LK005 references 弱引用：有链接但无明确读取时机（坑 27）。
-    # 规范规定 references 按需加载（loaded only when required），SKILL.md 的引导措辞
-    # 决定执行 AI 会不会真的去读；"详见/可参考"类弱措辞没有读取时机，模型不会自觉补读。
+    # LK005 references 弱引用：有链接但无明确读取时机或动作指令（坑 27）。
+    # 规范规定 references 按需加载，SKILL.md 的引导措辞决定执行 AI 会不会真的去读。
     if refs_dir.is_dir():
         strong_guidance = re.compile(
             r"必读|先读|先查|再读|完整阅读|完整读|另读|通读|读取时机|读取动作|何时读|逐条|对照|照抄|"
             r"读[^。\n]{0,24}(节|定义|方法|清单|流程|全文)|读[：:]|(时|后|前)[，,：:]\s*读|按 `?references/|"
-            r"When\s+\w|If you need|\bMUST\b|follow its instructions",
+            r"👉\s*动作[：:]\s*(?:读取|执行)|When\s+\w|If you need|\bMUST\b|follow its instructions",
             re.I,
         )
-        # 结构化信号：SKILL.md 有专门的参考文件章节（Reference Files/参考文档/按需加载参考/
-        # 先读*、必读* 类祈使标题），且文件在其中被列出（官方 webapp-testing 模式：文件 + 触发条件/用途清单）
+        weak_patterns = re.compile(r"可参考|详见|建议看|如果需要|不妨|可参阅")
         section = re.search(r"(?ms)^##\s+(Reference Files|参考文档[^\n]*|按需加载参考[^\n]*|先读[^\n]*|必读[^\n]*).*?(?=^##\s|\Z)", skill_text)
         listed_in_section = set(re.findall(r"references/[\w\-]+\.md", section.group(0))) if section else set()
         weak_only = []
         for p in sorted(refs_dir.glob("*.md")):
-            if f"references/{p.name}" in listed_in_section:
-                continue
             mention_lines = [ln for ln in skill_text.splitlines() if p.name in ln]
             if not mention_lines:
                 continue  # 完全未提及由 LK004 管
-            if not any(strong_guidance.search(ln) for ln in mention_lines):
+            has_strong = any(strong_guidance.search(ln) for ln in mention_lines)
+            has_weak = any(weak_patterns.search(ln) for ln in mention_lines)
+            if has_weak and not has_strong:
+                weak_only.append(f"{p.name} (含软性措辞)")
+            elif not has_strong and f"references/{p.name}" not in listed_in_section:
                 weak_only.append(p.name)
         if weak_only:
             findings.add("WARN", "LK005",
-                         f"references 仅弱引用（如'详见/可参考'），无明确读取时机——AI 可能不读（坑 27）：{weak_only}")
+                         f"references 存在弱引用措辞（如'详见/可参考'），无明确读取时机或强动作指令（坑 27）：{weak_only}")
         elif refs_dir.glob("*.md"):
             findings.add("OK", "LK005", "references 均有明确读取时机（强引导措辞）")
 
 
-def check_silent_failures(files: list[Path], root: Path, findings: Findings) -> None:
+def check_silent_failures(files: list[Path], root: Path, findings: Findings, skill_text: str = "") -> None:
     broad, narrow, skipping, bad_rc = [], [], [], []
     dangerous, interactive = [], []
     for path in files:
@@ -426,6 +426,14 @@ def check_silent_failures(files: list[Path], root: Path, findings: Findings) -> 
                  f"危险动态执行（eval/os.system/curl|bash 等，须人工确认用途）：{dangerous}" if dangerous else "无危险动态执行")
     findings.add("WARN" if interactive else "OK", "SF006",
                  f"含交互提示 input 调用（agent 非交互 shell 会挂死）：{interactive}" if interactive else "无交互提示 input 调用")
+
+    # SF007 声明式空头支票扫描（SKILL.md 声明了必须执行深度联网但 scripts 缺少对应物料断言）
+    if "步骤 3" in skill_text and ("深度联网" in skill_text or "四维" in skill_text):
+        scripts_text = "".join(read_text(p) for p in files if p.suffix == ".py")
+        if not re.search(r"research|pitfall|门禁|Gate|断言|check|task\.json", scripts_text, re.I):
+            findings.add("WARN", "SF007", "SKILL.md 声明了必须执行深度联网工序，但 scripts/ 缺少对应的物料门禁或输入断言")
+        else:
+            findings.add("OK", "SF007", "核心工序承诺与脚本物料门禁对称合流")
 
 
 FIXTURE_DIR_TOKENS = {"tests", "test", "fixtures", "examples", "evals"}
@@ -761,7 +769,8 @@ REPAIR_HINTS = {
     "FM007": "去掉 name/description 中的 XML 尖括号（防系统提示注入）",
     "LK001": "补齐缺失文件或修正引用路径",
     "LK002": "补齐缺失脚本或从文档删掉该命令",
-    "LK005": "给该 reference 的链接补上读取时机（如'做 X 前先读 Y：Z 在里面'），并说明为什么值得读（坑 27）",
+    "LK005": "升级为【就近内联动作指令】：在具体步骤正下方以 '👉 动作：读取 references/xxx.md#章节锚点' 形式就近下达指令，消除顶层泛指与'详见/可参考'类逃避词态（参见《审查与进化方法论》第 2.3 节）",
+    "SF007": "消除声明式空头支票：在下游脚本开头为文档声明的必须工序加入强输入断言（若缺少对应物料产物直接 sys.exit(1) 阻断），形成物理门禁，杜绝 AI 偷懒跳步",
     "SEC001": "密钥移到环境变量/.private（并入 .gitignore），清洗历史",
     "DY001": "补回归入口（CLI型补 selftest.py/tests/，纯提示词型运行 evolve.py --scaffold-prompt 补 evals/），参考审查与进化方法论.md",
     "DY003": "修 selftest 本身或其夹具，退出码与结论文本对齐",
@@ -793,7 +802,7 @@ def main() -> int:
     files = skill_files(root)
     check_references(root, skill_text, findings)
     check_caliber_consistency(files, root, findings)
-    check_silent_failures(files, root, findings)
+    check_silent_failures(files, root, findings, skill_text)
     check_security(files, root, findings)
     check_engineering(files, root, skill_text, findings)
     check_dynamic(root, findings, args.dynamic)

@@ -407,12 +407,13 @@ class SkillEvolutionAnalyzer:
 
             # 3. 事实卡与标准化交付 (FactCard: 20 分)
             fact_card_score = 0
-            if re.search(r"\|.*(层级|检查项|Metric|Item).*\|.*(实测|测量|Value).*\|.*(基线|Baseline).*\|.*(状态|判定|Status).*", self.skill_content, re.I):
+            all_docs = self.skill_content + ("\n" + "\n".join([p.read_text(encoding="utf-8", errors="ignore") for p in self.refs_dir.glob("*.md")]) if self.refs_dir.is_dir() else "")
+            if re.search(r"\|.*(层级|检查项|Metric|Item).*\|.*(实测|测量|Value).*\|.*(基线|Baseline).*\|.*(状态|判定|Status).*", all_docs, re.I):
                 fact_card_score += 20
-            elif re.search(r"事实卡|Fact Card|事实报告|Status Card|基线对照", self.skill_content, re.I):
+            elif re.search(r"事实卡|Fact Card|事实报告|Status Card|基线对照", all_docs, re.I):
                 fact_card_score += 10
-                findings.append("SKILL.md 提及了事实卡或基线概念，但缺少完整的 Markdown 表格格式")
-                recommendations.append("在 SKILL.md 中规范「分层事实卡」表格 (含项目、实测、基线、判定)")
+                findings.append("提及了事实卡或基线概念，但缺少完整的 Markdown 表格格式")
+                recommendations.append("在 SKILL.md 或 references/ 中规范「分层事实卡」表格 (含项目、实测、基线、判定)")
             else:
                 findings.append("未定义标准化的事实卡片交付成果格式")
                 recommendations.append("在 SKILL.md 输出规范中增加统一的事实卡 (Fact Card)，用客观指标说话")
@@ -509,12 +510,13 @@ class SkillEvolutionAnalyzer:
 
             # 3. 事实卡与标准化交付 (FactCard: 20 分)
             fact_card_score = 0
-            if re.search(r"\|.*(层级|检查项|Metric|Item).*\|.*(实测|测量|Value).*\|.*(基线|Baseline).*\|.*(状态|判定|Status).*", self.skill_content, re.I):
+            all_docs = self.skill_content + ("\n" + "\n".join([p.read_text(encoding="utf-8", errors="ignore") for p in self.refs_dir.glob("*.md")]) if self.refs_dir.is_dir() else "")
+            if re.search(r"\|.*(层级|检查项|Metric|Item).*\|.*(实测|测量|Value).*\|.*(基线|Baseline).*\|.*(状态|判定|Status).*", all_docs, re.I):
                 fact_card_score += 20
-            elif re.search(r"事实卡|Fact Card|事实报告|Status Card", self.skill_content, re.I):
+            elif re.search(r"事实卡|Fact Card|事实报告|Status Card", all_docs, re.I):
                 fact_card_score += 10
-                findings.append("SKILL.md 提及了事实卡概念，但缺少完整的 Markdown 表格格式与基线对照规范")
-                recommendations.append("在 SKILL.md 中规范「分层诊断事实卡」示例表格 (含检查项、实测值、正常基线、状态判定)")
+                findings.append("提及了事实卡概念，但缺少完整的 Markdown 表格格式与基线对照规范")
+                recommendations.append("在 SKILL.md 或 references/ 中规范「分层诊断事实卡」示例表格 (含检查项、实测值、正常基线、状态判定)")
             else:
                 findings.append("未定义标准化的事实卡片交付成果格式")
                 recommendations.append("在 SKILL.md 输出规范中增加统一的事实卡 (Fact Card)，用客观指标说话")
@@ -565,6 +567,13 @@ class SkillEvolutionAnalyzer:
                 recommendations.append("在 selftest.py 中增加对 Python / PowerShell / Bash 脚本的静态 AST 解析门禁")
 
             scores["Verification"] = min(20, verif_score)
+
+        # 6. 通用指令工程与就近内联动作检查（适用于所有形态）
+        has_inline_actions = bool(re.search(r"👉\s*动作[：:]", self.skill_content))
+        has_weak_ref = bool(re.search(r"可参考|详见|建议看|如果需要|不妨|可参阅", self.skill_content))
+        if has_weak_ref and not has_inline_actions:
+            findings.append("工作流包含'详见/可参考'类弱引用，模型执行时极易产生注意力漂移与跳步")
+            recommendations.append("将工作流升级为「就近内联动作指令」：在具体步骤下以 '👉 动作：读取 references/xxx.md#章节' 直接调用，消除弱引用")
 
         sei = sum(scores.values())
 
@@ -689,6 +698,26 @@ class SkillEvolutionAnalyzer:
 """
 
         plan += f"""
+### 3. 指令工程与防跳步最佳重构模式（Best Practice Blueprint）
+
+为彻底解决 AI 在执行技能时容易出现的「弱引用视而不见」与「偷懒跳过关键步骤」，推荐按以下工业级标准进行重构：
+
+- **重构模式 A：就近内联动作指令 (Inline Action Directives)**
+  杜绝在 SKILL.md 开头做泛泛空洞引用并在下方重复解释命令。遵循 agentskills.io 渐进式披露规范，在具体步骤正下方直接内联动作指令：
+  ```markdown
+  - [ ] **步骤 X：具体排查项名称**  
+        👉 动作：读取 `references/xxx.md#章节锚点`，对照执行并输出判定。
+  ```
+
+- **重构模式 B：建立物理物料锁 (Artifact Pipeline Gating)**
+  若工作流声明了必须执行的前置工序（如深水区挖掘、环境探测），下游脚本开头必须添加硬输入断言，未落盘产物直接阻断退出（rc=1），杜绝 AI 偷懒跳步：
+  ```python
+  required_artifact = root / "references" / "{name}-pitfalls.md"
+  if not required_artifact.is_file():
+      print("ERROR: 未检测到必须的前置工件！必须先执行前置工序并落盘产物，方可继续！")
+      sys.exit(1)
+  ```
+
 ---
 
 ## 六、发版卫生与工程纪律
@@ -778,14 +807,30 @@ def main() -> int:
     if args.research_plan:
         domain, queries = analyzer.generate_research_queries()
         arch_code, arch_desc = analyzer.detect_archetype()
+
+        # 写入轻量任务状态单锁 .doctor/research-task.json
+        doctor_dir = analyzer.target_dir / ".doctor"
+        doctor_dir.mkdir(exist_ok=True)
+        task_file = doctor_dir / "research-task.json"
+        task_data = {
+            "target_skill": analyzer.skill_name,
+            "domain": domain,
+            "status": "AWAITING_SEARCH_AND_PITFALLS",
+            "target_artifact": f"references/{analyzer.skill_name}-pitfalls.md",
+            "queries": queries,
+        }
+        task_file.write_text(json.dumps(task_data, ensure_ascii=False, indent=2), encoding="utf-8")
+
         print("\n" + "=" * 70)
         print("       skill-doctor 四维深水区联网检索矩阵 (Deep Domain Research Matrix)")
         print("=" * 70)
         print(f"目标技能: {analyzer.skill_name}")
         print(f"架构形态: [{arch_code}] {arch_desc}")
         print(f"提炼领域: {domain}")
+        print(f"任务状态: [已锁定] 已在目标目录生成 .doctor/research-task.json")
         print("-" * 70)
-        print("建议在进行技能内容丰富与灵魂注入时，调用搜索工具依次执行以下 4 维深水区挖掘:\n")
+        print("【物料强门禁要求】必须调用联网搜索工具依次执行以下 4 维深水区挖掘，")
+        print(f"并将挖掘知识成果落盘至 references/{analyzer.skill_name}-pitfalls.md 以核销该任务单:\n")
         for q in queries:
             print(f"【{q['dimension']}】")
             print(f"  检索 Query: {q['query']}")

@@ -2,6 +2,24 @@
 
 本项目采用 [Conventional Commits](https://www.conventionalcommits.org/) 格式记录变更。
 
+## [2.1.6] - 2026-09-06
+
+### 🚀 Feature: 建立通用弱引用与跳步重构处方体系、升级坑库与终审门禁
+
+构建从「智能检测」到「处方治理」的完整闭环，使 skill-doctor 能够开箱即用为被测技能开出标准化治理重构方案：
+
+- **代码级处方与重构蓝图 (`scripts/audit.py` & `scripts/evolve.py`)**：
+  - 升级 `REPAIR_HINTS`：针对 `LK005`（弱引用）与 `SF007`（空头支票）输出详尽的代码级重构指引与修改模板；
+  - `evolve.py --plan` 新增「指令工程与防跳步最佳重构模式（Best Practice Blueprint）」，提供直观 Before / After Markdown 对比；
+- **方法论处方库注入 (`references/审查与进化方法论.md`)**：
+  - 新增 Section 2.3「弱引用与空头支票的最佳治理处方」，规范行内动作指令与任务锁工单（Artifact Gating）的标准代码模式；
+- **踩坑库精准扩增 (`references/坑库.md`)**：
+  - 新增第 12 项「声明式空头支票与 AI 偷懒跳步【自动：SF007】」，揭示大模型认知惰性并给出工单锁解决方案；
+  - 升级第 22 项「弱引用措辞导致 References 不被阅读【自动：LK005】」，全面推荐行内动作指令范式；
+- **自适应物料状态锁与事实卡识别 (`scripts/evolve.py`)**：
+  - `--research-plan` 强制落盘 `.doctor/research-task.json` 物理任务工单，防止 AI 凭幻觉跳过联网检索；
+  - SEI 评估穿透检索 `references/*.md` 中的标准事实卡表格，保障解耦架构下的 100/100 工业级满分。
+
 ## [2.1.4] - 2026-09-06
 
 ### 🧹 Refactor: 合并审查与进化双方法论、消除形态重叠并精简 references 目录

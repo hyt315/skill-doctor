@@ -19,46 +19,41 @@ description: 审查与迭代任意 AI Agent 技能目录（SKILL.md/scripts/refe
 
 ### 模式 A：审查体检（Audit Mode）
 
-当用户要求体检、找茬、查 bug 或回归验证时执行：
+当用户要求体检、找茬、查 bug 或回归验证时，按状态机顺序严格执行：
 
-```
-审查进度：
-- [ ] 步骤0：判定技能所属架构形态（纯提示词 / CLI工具 / MCP协议端 / 多阶段流水线 / 复合型）
-- [ ] 步骤1：盘点技能目录结构（SKILL.md / scripts / references 逐个登记）
-- [ ] 步骤2：跑静态检查 scripts/audit.py <技能目录>（覆盖 50+ 项工业级规则）
-- [ ] 步骤3：动态实跑（selftest 或技能自述的验证命令，加 --dynamic）
-- [ ] 步骤4：负向用例抽查（对关键门构造破坏夹具）
-- [ ] 步骤5：坑库对照（逐条对照 references/坑库.md 的检查方法）
-- [ ] 步骤6：汇总审查报告，输出 audit-report.txt 并给出分级修复路径
-```
-
-- **步骤2 静态检查**：`python <本技能>/scripts/audit.py <被审技能目录>`，覆盖八类规则。行尾注释 `# skill-doctor: allow` 豁免单行；文件级启发式用 `skill-doctor: allow-block 规则码` 豁免整文件。
-- **步骤3 动态实跑**：`python <本技能>/scripts/audit.py <被审技能目录> --dynamic`，核验退出码与末行结论一致性。
-- **步骤6 报告导出**：支持标准控制台输出、`--json` 机器可读与 `--markdown` 表格。
+- [ ] **步骤 0：形态自适应判定**  
+      👉 动作：读取 `references/审查与进化方法论.md#一-五大架构形态判定与自适应考量`，锁定专属免测/体检规则。
+- [ ] **步骤 1：目录结构与资产盘点**  
+      👉 动作：逐个核查 `SKILL.md`、`scripts/` 与 `references/`，登记资产清单。
+- [ ] **步骤 2：静态合规门禁扫描**  
+      👉 动作：执行 `python scripts/audit.py <目标目录>`（覆盖 50+ 项静态规则；单行尾注 `# skill-doctor: allow` 豁免）。
+- [ ] **步骤 3：动态实跑核验**  
+      👉 动作：执行 `python scripts/audit.py <目标目录> --dynamic`，核对退出码 (rc=0) 与末行 RESULT PASS 一致性。
+- [ ] **步骤 4：负向破坏夹具抽查 (DY002)**  
+      👉 动作：读取 `references/审查与进化方法论.md#二-审查体检核心工序`，构造至少 1 种破坏夹具；放行通过即判为静默失效。
+- [ ] **步骤 5：实战通病逐条对照**  
+      👉 动作：读取 `references/坑库.md`，对未自动化的条目进行现场逐条核验。
+- [ ] **步骤 6：汇总审查报告与分级修复**  
+      👉 动作：输出 `audit-report.txt`，给出分级自愈方案（支持 `--json` 与 `--markdown` 导出）。
 
 ### 模式 B：迭代进化（Evolution Mode）
 
-当用户要求优化技能、丰富技能、扩展能力、提出改进方案或重构升维时执行：
+当用户要求优化技能、丰富技能、扩展能力、重构升维或提出改进方案时，按物料强门禁顺序严格执行：
 
-```
-进化进度：
-- [ ] 步骤1：运行进化雷达分析 scripts/evolve.py <技能目录> --analyze（自适应识别形态与计算 SEI 得分）
-- [ ] 步骤2：提炼深水区检索矩阵 scripts/evolve.py <技能目录> --research-plan（获取 4 维精准检索词）
-- [ ] 步骤3：执行深度联网挖掘（必须项）：调用联网检索工具挖掘官方 RFC、顶级开源标杆与杀手坑
-- [ ] 步骤4：专业知识资产沉淀与技能丰富：沉淀 references/<domain>-pitfalls.md、完善 Fact Card、设计 Hero Banner
-- [ ] 步骤5：形态适配脚手架注入：
-      - CLI/HYBRID 型：scripts/evolve.py <技能目录> --scaffold-test（注入 AST 与负向夹具）
-      - PROMPT 型：scripts/evolve.py <技能目录> --scaffold-prompt（注入 evals/ 评测集，绝不强塞空脚本）
-- [ ] 步骤6：只读与治理解耦（Zero-Mutation 原则，治理对策须用户明确授权后手动执行）
-- [ ] 步骤7：全链回归验证与工程卫生清理（确保 selftest / evals 通过并清除临时文件）
-```
-
-- **进化指数分析**：`python <本技能>/scripts/evolve.py <目标技能> --analyze` 查看五大形态识别结果与 SEI 五维量化打分；
-- **四维深水区检索**：`python <本技能>/scripts/evolve.py <目标技能> --research-plan` 提取领域关键词，生成官方规范、杀手坑、开源标杆与指标基线 4 组精准检索指令；
-- **生成演进方案**：`python <本技能>/scripts/evolve.py <目标技能> --plan` 自动输出针对该领域的演进蓝图与联网挖掘指引；
-- **注入测试脚手架**：`python <本技能>/scripts/evolve.py <目标技能> --scaffold-test` 自动生成合规 `selftest.py` 与 `tests/` 套件（适用于 CLI/HYBRID）；
-- **注入提示词评测套件**：`python <本技能>/scripts/evolve.py <目标技能> --scaffold-prompt` 自动生成 `evals/trigger_cases.json`（适用于纯提示词型 PROMPT）；
-- **注入全套多文件脚手架**：`python <本技能>/scripts/evolve.py <目标技能> --scaffold-all` 一键为目标技能生成测试套件与指标基线事实卡。
+- [ ] **步骤 1：进化雷达评估 (SEI)**  
+      👉 动作：执行 `python scripts/evolve.py <目标目录> --analyze`，获取形态自适应成熟度得分与演化缺口。
+- [ ] **步骤 2：生成四维深水区检索矩阵**  
+      👉 动作：执行 `python scripts/evolve.py <目标目录> --research-plan`，系统提取核心词并落盘 `.doctor/research-task.json` 任务单锁。
+- [ ] **步骤 3：强制执行四维深度联网检索（核心物料门禁）**  
+      👉 动作：**必须调用联网搜索工具**依次检索官方 RFC 规范、生产级故障事故、GitHub 标杆开源项目与指标基线；将挖掘成果**必须落盘至 `references/<domain>-pitfalls.md`**。未落盘产物前，严禁进入步骤 4！
+- [ ] **步骤 4：生成进阶方案与物料门禁核验**  
+      👉 动作：执行 `python scripts/evolve.py <目标目录> --plan`，生成演进方案并由门禁校验深水区产物真实度。
+- [ ] **步骤 5：形态适配脚手架注入**  
+      👉 动作：CLI/HYBRID 型执行 `python scripts/evolve.py <目标目录> --scaffold-test`（AST+负向用例）；PROMPT 型执行 `python scripts/evolve.py <目标目录> --scaffold-prompt`（evals 评测集，绝不强塞空脚本）；或 `--scaffold-all` 注入全套脚手架。
+- [ ] **步骤 6：只读与治理解耦 (Zero-Mutation)**  
+      👉 动作：读取 `references/审查与进化方法论.md#三-五阶段进化工程范式`，诊断排查纯只读；治理代码独立拆分，提供 Dry-Run 清单，**必须获得用户显式授权后手动执行**。
+- [ ] **步骤 7：全链回归验证与工程卫生清理**  
+      👉 动作：重跑 `selftest.py` 或 `evals/` 确认全绿；在发版提交前**物理删除** `audit-report.txt` 与测试临时文件，保持仓库零污染。
 
 ### 交付成果事实卡
 
