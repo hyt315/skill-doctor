@@ -40,7 +40,7 @@ Your AI Agent skill runs and demos look great — but is it truly reliable and p
 | Core Module | Capabilities & Scope | Quality Gates & Delivered Value |
 |---|---|---|
 | 🤖 **5 Archetype Auditing Engines** | Tailored checks for Pure Prompt, Tool-Augmented CLI, MCP Protocol Server, Multi-Stage Pipeline, and Hybrid skills | Eliminates one-size-fits-all dogma; never forces dummy scripts onto cognitive prompt skills |
-| 🌐 **4D Deep Domain Research Matrix** | Extracts domain keywords to generate targeted queries for Official Specs/RFCs, Killer Outages, Top Repos, and Metric Baselines | Drives skill evolution from shallow tweaks to authoritative domain enrichment |
+| 🌐 **4D Multi-Source Benchmark Matrix** | Generates targeted queries for Peer Agent Skills on GitHub, Top OSS Repos, Official Specs/RFCs, and Killer Pitfalls; supports executable AST probes and Tier-3 offline fallback | Benchmarks against state-of-the-art skills and ensures robust execution even in offline environments |
 | 🔍 **50+ Comprehensive Static Rules** | Covers FM structure, LK/AS links & assets, SF silent failures, SEC security, EN/PL cross-platform, CK/TC prompt health | Traceable rule IDs intercepting CRLF, Token URLs, consecutive hyphens, broad exceptions, and dead links |
 | 🧬 **Skill Evolution Engine (`evolve.py`)** | Adaptive SEI index (0-100), 4-Phase Closed-Loop Pipeline, automated evolution plans (`--plan`), and tailored scaffolding (`--scaffold-test` / `--scaffold-prompt` / `--scaffold-all`) | Upgrades skills into robust multi-file architectures with genuine test suites |
 | 🏃 **Dynamic Execution Verification** | Executes target skill's actual `selftest.py` or `evals/` test suite to verify exit code semantics and genuine test passes | Eliminates false confidence from pure text inspections |
@@ -145,8 +145,11 @@ python scripts/audit.py path/to/your-skill --markdown
 # 1. Profile skill archetype and compute Skill Evolution Index (SEI 0-100)
 python scripts/evolve.py path/to/your-skill --analyze
 
-# 2. Extract domain keywords and generate 4D deep domain research matrix
+# 2. Extract domain keywords and generate 4D multi-source research queries (Peer Skills / OSS / RFC / Pitfalls)
 python scripts/evolve.py path/to/your-skill --research-plan
+
+# If in an offline or search-restricted environment, activate Tier-3 offline fallback scaffolding:
+python scripts/evolve.py path/to/your-skill --offline-fallback
 
 # 3. Automatically generate customized evolution roadmap Markdown
 python scripts/evolve.py path/to/your-skill --plan -o evolution-plan.md

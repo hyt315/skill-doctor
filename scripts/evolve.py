@@ -327,24 +327,24 @@ class SkillEvolutionAnalyzer:
 
         queries = [
             {
-                "dimension": "维度 1：底层原理与权威规范 (RFC & Specs)",
+                "dimension": "维度 1：GitHub 同类开源技能标杆 (Peer Agent Skills)",
+                "query": f'{domain} (skill OR prompt OR agent) site:github.com "SKILL.md"',
+                "goal": "检索 GitHub 上同领域的开源 Agent 技能，深度对标其 SKILL.md 的 Prompt 架构设计、步骤编排、渐进披露范式与负向边界约束。",
+            },
+            {
+                "dimension": "维度 2：GitHub 顶级开源工程实现 (Top Domain OSS)",
+                "query": f"{domain} site:github.com stars:>1000 best practices architecture tooling",
+                "goal": "参考同领域 1k+ Stars 明星开源项目的底层工程实现、工具脚本组织、排查算法与异常处理机制。",
+            },
+            {
+                "dimension": "维度 3：底层原理与权威规范 (RFC & Specs)",
                 "query": f"{domain} RFC specification official documentation architecture internals",
                 "goal": "检索官方标准规范、底层通信协议或内核原理，建立专业严谨的技术术语与分层诊断依据。",
             },
             {
-                "dimension": "维度 2：生产级故障与深水杀手坑 (Killer Pitfalls)",
+                "dimension": "维度 4：生产级故障与深水杀手坑 (Killer Pitfalls)",
                 "query": f"{domain} production outage common pitfalls failure modes edge cases race condition",
                 "goal": "挖掘生产环境隐蔽踩坑、静默失效与边缘死锁案例，沉淀至 references/ 坑库以供防范。",
-            },
-            {
-                "dimension": "维度 3：GitHub 顶级开源标杆 (Top OSS Repos)",
-                "query": f"{domain} site:github.com top stars best practices tools banner readme",
-                "goal": "参考同领域 5k+ Stars 明星开源项目的工程架构、Banner 视觉风格、输出规范与核心设计。",
-            },
-            {
-                "dimension": "维度 4：客观指标基线与事实卡 (Metric Baselines)",
-                "query": f"{domain} performance baseline normal metrics benchmark latency threshold",
-                "goal": "提炼权威量化基线与健康度阈值区间，为技能注入高可信的标准分层 Fact Card。",
             },
         ]
         return domain, queries
@@ -685,10 +685,11 @@ class SkillEvolutionAnalyzer:
 
 {research_md}
 ### 挖掘成果沉淀建议
-1. **官方规范与权威术语**：将检索到的标准协议、官方标准参数与内核机制融入 `SKILL.md` 与 `references/`；
+1. **GitHub 同类开源技能对标**：对标开源同类 Agent 技能的 Prompt 结构、分步编排与防幻觉边界，融入 `SKILL.md`；
 2. **生产级隐蔽踩坑库**：在 `references/` 下新增 `{name}-pitfalls.md`，记录真实高发故障与反常识踩坑；
-3. **分层事实卡与正常基线**：在 `references/fact-card.md` 中规范客观指标正常范围与异常阈值；
-4. **视觉与架构资产**：参考顶级开源标杆，为技能制作高质量 SVG Hero Banner 或工作流架构图。
+3. **可执行探针核验 (Sanity Probes)**：代码片段必须通过 `ast.parse` 或语法编译探针，废弃超过 2 年未更新的旧命令；
+4. **分层事实卡与正常基线**：在 `references/fact-card.md` 中规范客观指标正常范围与异常阈值；
+5. **离线弹性降级**：若处于无网环境或搜索受限，执行 `python scripts/evolve.py {name} --offline-fallback` 自动注入启发式物料解锁工序。
 
 ---
 
@@ -803,7 +804,72 @@ class SkillEvolutionAnalyzer:
             fact_card.write_text(fact_card_code, encoding="utf-8")
             created.append(str(fact_card))
 
-        return created
+    def generate_offline_pitfalls(self, force: bool = False) -> Path:
+        """在弱网/断网或无搜索工具环境下，激活 Tier-3 离线启发式降级引擎一键生成基础避坑库与事实卡。"""
+        self.refs_dir.mkdir(parents=True, exist_ok=True)
+        pitfalls_file = self.refs_dir / f"{self.skill_name}-pitfalls.md"
+        domain, _ = self.generate_research_queries()
+        arch_code, arch_desc = self.detect_archetype()
+
+        content = f"""# 《{self.skill_name}》领域避坑库与基线指南 (Domain Pitfalls & Baselines)
+
+> - **领域归属**: `{domain}`
+> - **形态架构**: `[{arch_code}]` {arch_desc}
+> - **生成模式**: `Tier-3 离线专家启发式降级生成 (Offline Heuristic Scaffolding)`
+> - **核验规范**: 严禁引入年代过久(>2年未维护)陈旧命令；脚本代码必须通过静态语法编译(AST Probe)
+
+---
+
+## 一、高发隐蔽故障与死锁避坑 (Critical Failure Modes)
+
+1. **静默失败与退出码失真**：
+   - 现象：底层脚本抛出异常或外部命令失败时被 `except: pass` 吞没，返回码依然为 0，导致 Agent 误判任务成功。
+   - 对策：严格校验每一步执行结果，遇致命错误立即抛出显式非零退出码 (`sys.exit(1)`)。
+
+2. **交互挂死与无超时控制**：
+   - 现象：调用外部 CLI 或子进程时未设置超时 (`timeout`)，或包含等待终端输入提示，在非交互式 Agent Shell 中永久挂死。
+   - 对策：禁止交互式输入，外部进程调用统一附加超时保护机制。
+
+3. **依赖假设与跨平台断链**：
+   - 现象：硬编码绝对路径或假定特定外部工具已全局安装，换机即报找不到文件或命令。
+   - 对策：排查前检查关键依赖存在性，优先使用纯标准库或提供优雅探测提示。
+
+---
+
+## 二、标准交付成果：分层事实卡基线 (Fact Card Baselines)
+
+| 层级 | 检查项 | 实测测量方式 | 正常基线标准 | 异常判定与对策 |
+|---|---|---|---|:---:|
+| L1 基础层 | 核心配置与入口完备度 | 检查核心入口文件存在且语法合法 | 文件存在且 AST 校验 0 错误 | 🔴 缺失则阻断执行 |
+| L1 基础层 | 执行超时与安全边界 | 脚本运行耗时观测 | 执行时间 < 30 秒 | 🟡 超时则告警排查 |
+| L2 进阶层 | 异常退出与错误阻断 | 负向破坏测试 | 遇非法输入正确退出非 0 | 🔴 静默放行则阻断 |
+
+---
+
+## 三、代码片段可执行探针准则 (Executable Sanity Probes)
+
+若在后续联网或人工补充代码时，必须执行以下量化核验：
+1. **时效性核验**：优先选用近 2 年内活跃更新的官方规范或 GitHub 高 Star 仓库；
+2. **静态语法探针**：Python 片段必须经 `ast.parse` 解析无报错，Shell 脚本禁止使用已废弃命令参数；
+3. **只读安全性**：排查工序 100% 遵守 Zero-Mutation，破坏性变更须经用户显式授权。
+"""
+        if force or not pitfalls_file.is_file():
+            pitfalls_file.write_text(content, encoding="utf-8")
+
+        # 更新或创建任务工单锁为降级完成状态
+        doctor_dir = self.target_dir / ".doctor"
+        doctor_dir.mkdir(exist_ok=True)
+        task_file = doctor_dir / "research-task.json"
+        task_data = {
+            "target_skill": self.skill_name,
+            "domain": domain,
+            "status": "OFFLINE_HEURISTIC_FALLBACK",
+            "target_artifact": f"references/{self.skill_name}-pitfalls.md",
+            "generation_mode": "Tier-3 Offline Heuristic Fallback",
+        }
+        task_file.write_text(json.dumps(task_data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        return pitfalls_file
 
 
 def main() -> int:
@@ -812,6 +878,7 @@ def main() -> int:
     parser.add_argument("--analyze", action="store_true", help="执行五维进化度量化评估，计算 SEI (0-100)")
     parser.add_argument("--plan", action="store_true", help="自动生成针对该技能的《迭代进阶方案》Markdown")
     parser.add_argument("--research-plan", action="store_true", help="提炼该技能领域关键词，输出四维深水区联网检索矩阵")
+    parser.add_argument("--offline-fallback", action="store_true", help="在无网或弱网环境下，激活 Tier-3 离线启发式降级引擎一键生成基础避坑库与事实卡")
     parser.add_argument("--scaffold-test", action="store_true", help="一键生成符合规范的自测套件 (tests/ 与 selftest.py)")
     parser.add_argument("--scaffold-prompt", action="store_true", help="一键生成纯提示词型评测套件 (evals/trigger_cases.json)")
     parser.add_argument("--scaffold-all", action="store_true", help="一键生成完整多文件脚手架 (自测套件 + references/fact-card.md)")
@@ -827,6 +894,12 @@ def main() -> int:
         return 1
 
     analyzer = SkillEvolutionAnalyzer(target_path)
+
+    if args.offline_fallback:
+        created_file = analyzer.generate_offline_pitfalls(force=args.force)
+        print(f"成功激活 Tier-3 离线启发式降级引擎，已生成避坑物料：\n  + {created_file}")
+        print("任务工单状态已更新为 [OFFLINE_HEURISTIC_FALLBACK]，物料门禁已解开，可进入阶段 3 施工。")
+        return 0
 
     if args.research_plan:
         domain, queries = analyzer.generate_research_queries()
@@ -853,12 +926,16 @@ def main() -> int:
         print(f"提炼领域: {domain}")
         print(f"任务状态: [已锁定] 已在目标目录生成 .doctor/research-task.json")
         print("-" * 70)
-        print("【物料强门禁要求】必须调用联网搜索工具依次执行以下 4 维深水区挖掘，")
+        print("【物料强门禁要求】必须执行以下 4 维深水区挖掘（多源对标与可执行探针），")
         print(f"并将挖掘知识成果落盘至 references/{analyzer.skill_name}-pitfalls.md 以核销该任务单:\n")
         for q in queries:
             print(f"【{q['dimension']}】")
             print(f"  检索 Query: {q['query']}")
             print(f"  挖掘目标: {q['goal']}\n")
+        print("【三级弹性策略】")
+        print("  - Tier 1 全网在线：调用联网工具执行上述 4 维检索（深度对标 GitHub 同类开源技能）；")
+        print("  - Tier 2 定向白名单：弱网环境下定向检索 site:github.com；")
+        print(f"  - Tier 3 离线降级：无网或搜索受限时，运行 python scripts/evolve.py {analyzer.skill_name} --offline-fallback 自动生成启发式物料。\n")
         print("=" * 70 + "\n")
         return 0
 

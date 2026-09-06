@@ -27,17 +27,17 @@ description: 审查与迭代任意 AI Agent 技能目录（SKILL.md/scripts/refe
 - [ ] 3. **成熟度打分与动态实跑**  
       👉 动作：执行 `python scripts/evolve.py <目标目录> --analyze` 查看 SEI 得分；执行 `python scripts/audit.py <目标目录> --dynamic` 校验退出码。
 - [ ] 4. **负向破坏与实战通病核验**  
-      👉 动作：按 `references/审查与进化方法论.md#二-审查体检核心工序` 抽查负向夹具 (DY002)；读取 `references/坑库.md` 逐条核验未自动化项。
-- [ ] 5. **诊断事实卡与处方交付**  
-      👉 动作：输出 `audit-report.txt`。**【断点】若用户仅要求体检/找茬/回归，交付报告后在此结案。**
+      👉 动作：按 `references/审查与进化方法论.md#阶段-1全方位现状诊断只读体检` 抽查负向夹具 (DY002)；读取 `references/坑库.md` 逐条核验未自动化项。
+- [ ] 5. **诊断事实卡与阶段导航交付**  
+      👉 动作：输出 `audit-report.txt` 与分层事实卡，附带当前进度与后续可选操作指引。**【断点】若用户仅要求体检/找茬/回归，交付后在此结案。**
 
 ### 阶段 2：方案设计与深水区挖掘
 - [ ] 1. **生成进阶方案与待修清单**  
       👉 动作：执行 `python scripts/evolve.py <目标目录> --plan`，自动聚合阶段 1 查出的弱引用与结构缺陷为修复清单。
 - [ ] 2. **提炼检索矩阵并落盘工单锁**  
       👉 动作：执行 `python scripts/evolve.py <目标目录> --research-plan`，提取核心词并落盘 `.doctor/research-task.json`。
-- [ ] 3. **四维深度联网检索（核心物料门禁）**  
-      👉 动作：调用联网工具检索官方规范、生产故障事故、顶级标杆与指标基线；将成果落盘至 `references/<domain>-pitfalls.md`。未落盘产物前，严禁进入阶段 3！
+- [ ] 3. **多源深度挖掘与弹性降级（核心物料门禁）**  
+      👉 动作：对标 GitHub 同类技能、开源标杆、规范与踩坑，经可执行探针核验后落盘至 `references/<domain>-pitfalls.md`；若无网或受限，执行 `python scripts/evolve.py <目标目录> --offline-fallback` 自动注入启发式物料。未落盘产物前，严禁进入阶段 3！
 
 ### 阶段 3：处方施工与结构治理（代码与文档改造）
 - [ ] 1. **消灭弱引用 (LK005 治理)**  
@@ -47,7 +47,7 @@ description: 审查与迭代任意 AI Agent 技能目录（SKILL.md/scripts/refe
 - [ ] 3. **形态适配脚手架注入**  
       👉 动作：CLI/HYBRID 型执行 `python scripts/evolve.py <目标目录> --scaffold-test`（注入 AST+负向夹具）；PROMPT 型执行 `python scripts/evolve.py <目标目录> --scaffold-prompt`（注入 evals 评测集）；或 `--scaffold-all`。
 - [ ] 4. **只读与治理解耦 (Zero-Mutation)**  
-      👉 动作：读取 `references/审查与进化方法论.md#三-五阶段进化工程范式`，排查诊断 100% 只读；破坏性修复与重写必须出具清单，经用户明确授权后手动执行。
+      👉 动作：读取 `references/审查与进化方法论.md#3-只读与治理解耦铁律-zero-mutation`，排查诊断 100% 只读；破坏性修复与重写必须出具清单，经用户明确授权后手动执行。
 
 ### 阶段 4：闭环回归与终审验收
 - [ ] 1. **全链路回归验证**  
@@ -55,9 +55,9 @@ description: 审查与迭代任意 AI Agent 技能目录（SKILL.md/scripts/refe
 - [ ] 2. **工程卫生清理与交付**  
       👉 动作：物理删除 `audit-report.txt` 等测试临时副产物，保持代码库零污染；汇总交付分层事实卡。
 
-### 交付成果事实卡
+### 交付成果事实卡与阶段导航
 
-最终交付成果统一汇总为分层事实卡（静态门禁、动态实跑、SEI 成熟度三层指标，详细结构见 `references/审查与进化方法论.md`）。
+👉 动作：读取 `references/审查与进化方法论.md#标准分层事实卡规范fact-card-template`，汇总交付分层事实卡与阶段进度指引卡。
 
 ## 自审与互审
 

@@ -40,7 +40,7 @@
 | 核心模块 | 覆盖功能与能力 | 带来价值与质量门禁 |
 |---|---|---|
 | 🤖 **五大形态专属审计引擎** | 智能适配纯提示词型、CLI 脚本增强型、MCP 协议端型、多阶段流水线型与复合型技能 | 告别一刀切，量体裁衣，因材施教，绝不强塞空脚本 |
-| 🌐 **四维深水区联网检索矩阵** | 自动提炼技能领域核心词，输出官方规范/RFC、生产级杀手坑、开源标杆与指标基线 4 维检索指令 | 驱动技能从浅层修补跃迁至深水区内容丰满与灵魂注入 |
+| 🌐 **四维深水区多源对标矩阵** | 自动提炼技能领域核心词，输出 GitHub 同类 Agent 技能标杆、顶级开源库、官方规范/RFC与杀手坑 4 维对标指令；支持可执行探针与 Tier-3 离线降级 | 驱动技能深度对标开源标杆，并在断网/弱网环境下 100% 鲁棒跑通 |
 | 🔍 **50+ 项全维度静态规则** | 覆盖 FM 结构、LK/AS 链接与资产、SF 静默失效、SEC 深度安全、EN/PL 跨平台工程、CK/TC 口径与 Prompt 健康 | 逐项编号可追溯，精准拦截 CRLF、Token URL、连续连字符、宽捕获与断链 |
 | 🧬 **技能迭代进化引擎 (`evolve.py`)** | 形态自适应 SEI 指数 (0-100)、四阶段闭环流水线、演进方案自动生成 (`--plan`)、专属脚手架注入 (`--scaffold-test` / `--scaffold-prompt` / `--scaffold-all`) | 驱动技能从脆弱的单文件或浅层说明升级为工业级 multi-file 系统 |
 | 🏃 **动态实跑真实验证** | 实际拉起并运行被审技能的自测脚本（`selftest.py`）或评测集（`evals/`），核验退出码语义诚实度 | 杜绝靠纯文本检查产生的虚假安全感 |
@@ -145,8 +145,11 @@ python scripts/audit.py path/to/your-skill --markdown
 # 1. 评估技能形态与进化度，计算 SEI (0-100) 并输出雷达分析
 python scripts/evolve.py path/to/your-skill --analyze
 
-# 2. 提取该领域核心词，自动生成四维深水区联网检索矩阵 (RFC/踩坑/标杆/基线)
+# 2. 提取该领域核心词，自动生成四维深水区多源对标矩阵 (同类技能/开源工程/RFC/踩坑)
 python scripts/evolve.py path/to/your-skill --research-plan
+
+# 若在无网、弱网或搜索受限环境下，可一键激活 Tier-3 离线启发式降级生成避坑物料：
+python scripts/evolve.py path/to/your-skill --offline-fallback
 
 # 3. 自动生成针对该技能的《迭代进阶方案》Markdown (含四维检索与形态工程)
 python scripts/evolve.py path/to/your-skill --plan -o evolution-plan.md

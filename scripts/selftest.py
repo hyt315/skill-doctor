@@ -457,13 +457,21 @@ def main() -> int:
             raise RuntimeError(f"evolve --scaffold-all 应生成完整脚手架：\n{out_all}")
         checks += 1
 
-        # 7. evolve --research-plan 验证四维深水区检索生成
+        # 7. evolve --research-plan 验证四维深水区检索生成（含 GitHub 同类技能对标）
         rc_res, out_res = run_evolve(scaffold_all_skill, "--research-plan")
         if (rc_res != 0 or
             "四维深水区联网检索矩阵" not in out_res or
-            "维度 1：底层原理与权威规范" not in out_res or
-            "维度 2：生产级故障与深水杀手坑" not in out_res):
+            "GitHub 同类开源技能标杆" not in out_res or
+            "底层原理与权威规范" not in out_res):
             raise RuntimeError(f"evolve --research-plan 应输出四维检索矩阵：\n{out_res}")
+        checks += 1
+
+        # 7b. evolve --offline-fallback 验证 Tier-3 离线启发式降级生成
+        rc_fb, out_fb = run_evolve(scaffold_all_skill, "--offline-fallback")
+        if (rc_fb != 0 or
+            not (scaffold_all_skill / "references" / f"{scaffold_all_skill.name}-pitfalls.md").is_file() or
+            "Tier-3 离线启发式降级引擎" not in out_fb):
+            raise RuntimeError(f"evolve --offline-fallback 应生成降级踩坑库产物：\n{out_fb}")
         checks += 1
 
         # 8. 纯提示词型技能与 --scaffold-prompt 验证
