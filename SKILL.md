@@ -5,18 +5,7 @@ description: 审查与迭代任意 AI Agent 技能目录（SKILL.md/scripts/refe
 
 # 技能审查与进化引擎（skill-doctor）
 
-专为 AI Agent 技能打造的工业级质量审查师与持续进化引擎。支持 **模式 A：审查体检（Audit Mode）** 与 **模式 B：迭代进化（Evolution Mode）** 双工作流，适用于 Claude Code / Codex / Cursor / DSH 等全形态 Agent 技能。
-
-## 为什么需要它
-
-静态读代码发现不了环境性缺陷与静默失效，单次开发容易停留在脆弱的纯提示词层面。高可靠技能需要审查与进化双闭环：
-
-1. **静态口径对齐**——文档、脚本、参考文件四方承诺一致（50+ 项工业级规则分类学，详见 `references/静态规则清单.md`；纯标准库零外部依赖）；
-2. **动态实跑真测**——把技能自身的 selftest/校验脚本真跑一遍，核验退出码与结论一致性；
-3. **负向用例破坏**——每道门构造“该 FAIL 的夹具”验证它真会拦截（DY002）；
-4. **50+ 条实战坑库对照**——从数百次真实重构中沉淀的最佳实践（详见 `references/坑库.md`）；
-5. **五阶段进化范式**——从深水区联网检索、确定性工具升维、只读治理解耦、代理验证器到发布治理（详见 `references/技能迭代进化方法论.md`）；
-6. **SEI 进化指数模型**——五维量化（架构、工具化、事实卡、安全、验证），驱动技能自动生成升级方案与测试脚手架。
+专为 AI Agent 技能打造的工业级质量审查师与持续进化引擎。支持 **模式 A：审查体检（Audit Mode）** 与 **模式 B：迭代进化（Evolution Mode）** 双工作流。
 
 ## Reference Files
 
@@ -72,21 +61,16 @@ description: 审查与迭代任意 AI Agent 技能目录（SKILL.md/scripts/refe
 - **注入提示词评测套件**：`python <本技能>/scripts/evolve.py <目标技能> --scaffold-prompt` 自动生成 `evals/trigger_cases.json`（适用于纯提示词型 PROMPT）；
 - **注入全套多文件脚手架**：`python <本技能>/scripts/evolve.py <目标技能> --scaffold-all` 一键为目标技能生成测试套件与指标基线事实卡。
 
-### 交付成果标准事实卡 (Fact Card)
+### 交付成果事实卡
 
-无论在模式 A 还是模式 B，最终交付成果均汇总为标准化分层事实卡片：
-
-| 层级 | 检查项 (Item) | 实测指标 (Value) | 正常基线 (Baseline) | 判定状态 (Status) |
-|---|---|---|---|:---:|
-| L1 静态门禁 | 50+ 项工业级静态规则 | 0 FAIL | 全部合规 (零 FAIL) | 🟢 正常 |
-| L2 动态验证 | selftest 真实实跑与负向夹具 | rc=0, 全部断言通过 | 真实通过 (rc=0) | 🟢 正常 |
-| L3 演进成熟 | SEI 技能进化指数 (0-100) | 五维量化满分 (100) | 健全基线 (≥80) | 🟢 健全 |
+无论模式 A 还是模式 B，最终交付成果均统一汇总为分层事实卡（静态门禁、动态实跑、SEI 成熟度三层指标，详细结构见 `references/技能迭代进化方法论.md`）。
 
 ## 自审与互审
 
 - **改本技能后**：`python scripts/selftest.py`（负向夹具 + evolve.py 回归）+ `python scripts/trigger_eval.py`（触发边界回归），两者全绿才算完；
 - **改 description**：必须过 `evals/trigger_cases.json` 全家族用例；
-- **治理元数据**：`manifest.json` 与 `CHANGELOG.md`，版本随功能演进递增。
+- **治理元数据**：`manifest.json` 与 `CHANGELOG.md`，版本随功能演进递增；
+- **环境依赖**：纯 Python 3 标准库实现，100% 零外部依赖。
 
 ## 审查与进化纪律
 

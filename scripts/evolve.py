@@ -863,12 +863,8 @@ def main() -> int:
         for r in res["Recommendations"]:
             print(f"  * 💡 {r}")
 
-    print("\n【通用技能演化避坑对照】")
-    for p in res["UniversalKillerPitfalls"][:5]:
-        print(f"  * 🎯 {p}")
-
-    print("\n提示: 运行 `python evolve.py <技能目录> --plan` 可直接生成完整 Markdown 升级实施方案。")
-    print("      运行 `python evolve.py <技能目录> --research-plan` 可直接查看 4 维深水区联网检索指令。")
+    if not res["Findings"]:
+        print("\n【演化评估结论】各项指标均已达到工业级基线，未发现显著架构缺口。")
     print("=" * 70 + "\n")
     return 0
 
