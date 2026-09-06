@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="100%" height="auto">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16" />
+      <stop offset="50%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- Accent Gradient -->
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="50%" stop-color="#4facfe" />
+      <stop offset="100%" stop-color="#38ef7d" />
+    </linearGradient>
+
+    <!-- Badge Gradient -->
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(14, 165, 233, 0.15)" />
+      <stop offset="100%" stop-color="rgba(16, 185, 129, 0.15)" />
+    </linearGradient>
+
+    <!-- Glowing Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 800; font-size: 54px; fill: #ffffff; letter-spacing: -1.5px; }
+    .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 24px; fill: #38bdf8; }
+    .tagline { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 400; font-size: 16px; fill: #94a3b8; }
+    .badge-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 13px; fill: #e2e8f0; }
+    .header-pill { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 12px; fill: #10b981; letter-spacing: 1.5px; }
+  </style>
+
+  <!-- Background Base -->
+  <rect width="1200" height="360" rx="20" fill="url(#bgGrad)" />
+  <rect width="1198" height="358" x="1" y="1" rx="19" fill="none" stroke="#1e293b" stroke-width="2" />
+
+  <!-- Subtle Top Decorative Line -->
+  <rect x="0" y="0" width="1200" height="4" fill="url(#accentGrad)" />
+
+  <!-- Decorative Circuit / Grid Details -->
+  <g opacity="0.1" stroke="#38bdf8" stroke-width="1">
+    <line x1="800" y1="40" x2="1140" y2="40" />
+    <line x1="1140" y1="40" x2="1140" y2="300" />
+    <line x1="850" y1="300" x2="1140" y2="300" />
+    <circle cx="800" cy="40" r="3" fill="#38bdf8" />
+    <circle cx="850" cy="300" r="3" fill="#38bdf8" />
+    <line x1="920" y1="100" x2="1100" y2="100" />
+    <circle cx="920" cy="100" r="2.5" fill="#38bdf8" />
+  </g>
+
+  <!-- Left Hero Icon Graphic -->
+  <g transform="translate(80, 75)">
+    <!-- Glow Ring -->
+    <circle cx="70" cy="70" r="66" fill="#0f172a" stroke="#0284c7" stroke-width="2.5" opacity="0.8" />
+    <circle cx="70" cy="70" r="76" fill="none" stroke="url(#accentGrad)" stroke-width="1.5" stroke-dasharray="8 6" opacity="0.6" />
+
+    <!-- Medical Cross with DNA Ribbon -->
+    <path d="M58 35 h24 v23 h23 v24 h-23 v23 h-24 v-23 h-23 v-24 h23 z" fill="url(#accentGrad)" filter="url(#glow)" opacity="0.95" />
+    <path d="M60 37 h20 v25 h25 v20 h-25 v25 h-20 v-25 h-25 v-20 h25 z" fill="#ffffff" opacity="0.25" />
+
+    <!-- Pulse ECG Line in Cross -->
+    <path d="M38 70 h20 l7 -15 l10 30 l8 -20 l6 8 h25" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+
+  <!-- Main Content Block -->
+  <g transform="translate(265, 60)">
+    <!-- Header Top Pill -->
+    <g transform="translate(0, 0)">
+      <rect width="320" height="28" rx="14" fill="url(#badgeGrad)" stroke="#10b981" stroke-width="1" stroke-opacity="0.4" />
+      <circle cx="16" cy="14" r="4.5" fill="#10b981" />
+      <text x="30" y="18.5" class="header-pill">AGENT SKILLS SPEC COMPLIANT</text>
+    </g>
+
+    <!-- Main Title -->
+    <text x="0" y="76" class="title">SKILL DOCTOR</text>
+
+    <!-- Subtitle -->
+    <text x="0" y="116" class="subtitle">Agent Skill 全维度质量体检 &amp; 持续进化引擎</text>
+
+    <!-- Tagline -->
+    <text x="0" y="148" class="tagline">The Production-Grade Quality Auditor &amp; Iterative Evolution Engine for AI Agent Skills</text>
+
+    <!-- Feature Pills Row -->
+    <g transform="translate(0, 185)">
+      <!-- Pill 1: 双工作流模式 -->
+      <g transform="translate(0, 0)">
+        <rect width="128" height="32" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" />
+        <text x="14" y="21" class="badge-text">⚡ 双工作流模式</text>
+      </g>
+      <!-- Pill 2: 50+ 静态规则 -->
+      <g transform="translate(138, 0)">
+        <rect width="134" height="32" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" />
+        <text x="14" y="21" class="badge-text">🔍 50+ 工业级规则</text>
+      </g>
+      <!-- Pill 3: SEI 进化雷达 -->
+      <g transform="translate(282, 0)">
+        <rect width="144" height="32" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" />
+        <text x="14" y="21" class="badge-text">📊 SEI 进化雷达</text>
+      </g>
+      <!-- Pill 4: 负向测试脚手架 -->
+      <g transform="translate(436, 0)">
+        <rect width="148" height="32" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" />
+        <text x="14" y="21" class="badge-text">🛡️ 负向测试脚手架</text>
+      </g>
+      <!-- Pill 5: 纯标准库零依赖 -->
+      <g transform="translate(594, 0)">
+        <rect width="144" height="32" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" />
+        <text x="14" y="21" class="badge-text">🚀 纯标准库零依赖</text>
+      </g>
+    </g>
+  </g>
+</svg>

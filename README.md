@@ -1,10 +1,14 @@
+<p align="center">
+  <img src="assets/banner.svg" alt="Skill Doctor - AI Agent Skill Auditor & Iterative Evolution Engine" width="100%" />
+</p>
+
 # 🩺 技能审查师 / Skill Doctor
 
 <div align="center">
 
-**给 AI Agent 技能做全维度深度体检：四大形态专属引擎、50+ 项工业级规则、动态实跑、负向抽查与自愈修复指引。**
+**给 AI Agent 技能做全维度深度体检与自进化：四大形态专属引擎、50+ 项工业级规则、SEI 进化度量化评估、多文件脚手架一键注入与自愈修复指引。**
 
-**Industrial-grade AI Agent skill auditor & linter with 4 architectural engines, 50+ static rules, dynamic execution, negative sampling, and actionable fix hints.**
+**Industrial-grade AI Agent skill auditor & iterative evolution engine: 4 architectural engines, 50+ static rules, SEI index, multi-file scaffolding, and actionable fix hints.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/hyt315/skill-doctor?sort=semver)](CHANGELOG.md)
@@ -36,17 +40,38 @@
 | 核心模块 | 覆盖功能与能力 | 带来价值与质量门禁 |
 |---|---|---|
 | 🤖 **四大形态专属审计引擎** | 智能适配纯提示词型、CLI 脚本增强型、MCP 协议端型、多阶段流水线型技能 | 告别一刀切，为不同架构形态提供定制化体检重点 |
-| 🔍 **50+ 项全维度静态规则** | 覆盖 FM 结构、LK/AS 链接与资产、SF 静默失效、SEC 深度安全、EN/PL 跨平台工程、CK/TC 口径与 Prompt 健康 | 逐项编号可追溯，精准拦截 CRLF、Token URL、宽捕获与断链 |
-| 🧬 **技能迭代进化引擎 (`evolve.py`)** | SEI 技能进化指数 (0-100)、演进方案自动生成 (`--plan`)、测试脚手架一键注入 (`--scaffold-test`) | 驱动技能从脆弱的纯提示词升级为工业级 multi-file 系统 |
+| 🔍 **50+ 项全维度静态规则** | 覆盖 FM 结构、LK/AS 链接与资产、SF 静默失效、SEC 深度安全、EN/PL 跨平台工程、CK/TC 口径与 Prompt 健康 | 逐项编号可追溯，精准拦截 CRLF、Token URL、连续连字符、宽捕获与断链 |
+| 🧬 **技能迭代进化引擎 (`evolve.py`)** | SEI 技能进化指数 (0-100)、演进方案自动生成 (`--plan`)、全套多文件脚手架一键注入 (`--scaffold-all` / `--scaffold-test`) | 驱动技能从脆弱的纯提示词升级为工业级 multi-file 系统 |
 | 🏃 **动态实跑真实验证** | 实际拉起并运行被审技能的自测脚本（`selftest.py`），核验退出码语义诚实度 | 杜绝靠纯文本检查产生的虚假安全感 |
 | 🎯 **负向破坏用例抽查** | 针对安全与质量门禁构造破坏样本，验证拦截门是否真的会阻断违规输入 | 专抓「门名义存在、实际放行」的最危险静默失效 |
-| 🧠 **40+ 条真实通病坑库** | 从数百次真实技能审查与重构实战中沉淀的典型坑库（现象 → 根因 → 修复 → 预防） | 持续沉淀最佳实践，避免重蹈覆辙 |
+| 🧠 **50+ 条真实通病坑库** | 从数百次真实技能审查与重构实战中沉淀的典型坑库（现象 → 根因 → 修复 → 预防） | 持续沉淀最佳实践，避免重蹈覆辙 |
 | 📄 **多格式导出与自愈建议** | 支持 ANSI 控制台高亮看板、`--json` 机器可读、`--markdown` GitHub 表格导出 | 自带一键修复代码建议，无缝集成 CI 流水线 |
 | 🛡️ **纯 Python 零依赖只读** | 仅使用 Python 3.10+ 标准库，审查过程对目标代码 100% 只读，零副作用 | 随处秒开秒跑，无需安装繁琐三方依赖 |
 
+### 🧬 技能进化指数看板 (Skill Evolution Index Radar)
+
+只需一条命令，即可量化技能成熟度，并生成专业进阶方案与全套脚手架：
+
+```text
+======================================================================
+       skill-doctor 技能进化度评估看板 (Skill Evolution Index)
+======================================================================
+目标技能: my-agent-skill
+综合进化指数 (SEI): 85 / 100
+----------------------------------------------------------------------
+评估维度                             | 当前得分       | 满分基线      
+----------------------------------------------------------------------
+Architecture (多文件完备度)         | 20         | 20
+Tooling (确定性脚本工具化)           | 20         | 20
+FactCard (事实卡与指标基线)         | 20         | 20
+Safety (只读优先与写操作授权解耦)   | 15         | 20
+Verification (负向破坏与AST语法门禁)| 10         | 20
+----------------------------------------------------------------------
+```
+
 ---
 
-## 📊 技能体检全流程架构
+## 📊 技能体检与进化全流程架构
 
 ```
 [输入: 待审查的 AI 技能目录]
@@ -63,11 +88,14 @@
       [Step 3: 负向破坏样本抽查]
       构造故意破坏样本，验证质量门是否真能拦截非法输入
                        │
-      [Step 4: 40+ 条实战通病坑库逐项核对]
+      [Step 4: 50+ 条实战通病坑库逐项核对]
       对照历史高频通病，排查暗环节与状态机落盘缺陷
                        │
       [Step 5: 报告生成与 Actionable 自愈建议]
       输出 audit-report.txt / --json / --markdown，给出分级修复路径
+                       │
+      [Step 6: SEI 技能进化与脚手架注入 (evolve.py)]
+      计算五维成熟度得分，输出 Evolution Plan Markdown 并注入 Multi-File 骨架
 ```
 
 ---
@@ -122,6 +150,9 @@ python scripts/evolve.py path/to/your-skill --plan -o evolution-plan.md
 # 一键注入标准自测套件 (tests/ 与 scripts/selftest.py，含 AST 校验与 DY002 负向夹具)
 python scripts/evolve.py path/to/your-skill --scaffold-test
 
+# 一键注入完整多文件脚手架 (自测套件 + references/fact-card.md 标准事实卡)
+python scripts/evolve.py path/to/your-skill --scaffold-all
+
 # 运行 skill-doctor 自身的回归测试
 python scripts/selftest.py
 ```
@@ -154,7 +185,7 @@ python scripts/selftest.py
 | 参考文档 | 核心内容 | 推荐阅读时机 | 预估耗时 |
 |---|---|---|---|
 | 📋 [**静态规则清单 (`静态规则清单.md`)**](references/静态规则清单.md) | 50+ 项工业级规则定义、编号出处与分级修复建议 | 审查报错排查与规则对齐时 | 4 分钟 |
-| 🛡️ [**通病坑库 (`坑库.md`)**](references/坑库.md) | 40+ 条真实开发踩坑沉淀（现象 → 根因 → 修复 → 预防） | 审查复杂技能与排查隐蔽缺陷时 | 5 分钟 |
+| 🛡️ [**通病坑库 (`坑库.md`)**](references/坑库.md) | 50+ 条真实开发踩坑沉淀（现象 → 根因 → 修复 → 预防） | 审查复杂技能与排查隐蔽缺陷时 | 5 分钟 |
 | 🩺 [**审查方法论 (`审查方法论.md`)**](references/审查方法论.md) | 四大形态专属要点、负向用例构造、从审查到进化的衔接桥梁与安全治疗流程 | 编写自测用例与执行大版本重构时 | 4 分钟 |
 | 🧬 [**技能迭代进化方法论 (`技能迭代进化方法论.md`)**](references/技能迭代进化方法论.md) | 五阶段进化范式、SEI 指数模型、工具化升维与只读治理解耦铁律 | 技能迭代升级与重构时 | 5 分钟 |
 
@@ -176,15 +207,17 @@ skill-doctor/
 ├── SUPPORT.md                        # 支持渠道
 ├── manifest.json                     # 技能元数据清单
 ├── agents/                           # 多 Agent 平台元数据
+├── assets/                           # 视觉资产
+│   └── banner.svg                    # 专属高清矢量 Hero Banner
 ├── evals/                            # 触发用例评测集
 ├── scripts/
 │   ├── audit.py                      # 核心审计引擎（四大形态 + 50+规则 + 多格式导出）
 │   ├── evolve.py                     # 迭代进化引擎（SEI五维评估 + 方案生成 + 脚手架注入）
 │   ├── trigger_eval.py               # 触发边界评测脚本
-│   └── selftest.py                   # 自动化回归自测脚本（26 项全面回归）
+│   └── selftest.py                   # 自动化回归自测脚本（27 项全面回归）
 └── references/                       # 规则清单、通病坑库与方法论
     ├── 静态规则清单.md                # 50+ 项工业级规则全览
-    ├── 坑库.md                        # 40+ 条真实踩坑与避坑对策（含坑 44-48）
+    ├── 坑库.md                        # 50+ 条真实踩坑与避坑对策（含坑 44-50）
     ├── 审查方法论.md                  # 四大形态、负向夹具与审查到进化的桥梁
     └── 技能迭代进化方法论.md          # 五阶段进化范式、只读解耦与 SEI 模型
 ```

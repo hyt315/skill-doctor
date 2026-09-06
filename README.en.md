@@ -1,10 +1,14 @@
+<p align="center">
+  <img src="assets/banner.svg" alt="Skill Doctor - AI Agent Skill Auditor & Iterative Evolution Engine" width="100%" />
+</p>
+
 # 🩺 Skill Doctor / skill-doctor
 
 <div align="center">
 
-**Industrial-grade AI Agent skill auditor & linter with 4 architectural engines, 50+ static rules, dynamic execution, negative sampling, and actionable fix hints.**
+**Industrial-grade AI Agent skill auditor & iterative evolution engine: 4 architectural engines, 50+ static rules, SEI index, multi-file scaffolding, and actionable fix hints.**
 
-**给 AI Agent 技能做全维度深度体检：四大形态专属引擎、50+ 项工业级规则、动态实跑、负向抽查与自愈修复指引。**
+**给 AI Agent 技能做全维度深度体检与自进化：四大形态专属引擎、50+ 项工业级规则、SEI 进化度量化评估、多文件脚手架一键注入与自愈修复指引。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/hyt315/skill-doctor?sort=semver)](CHANGELOG.md)
@@ -36,17 +40,38 @@ Your AI Agent skill runs and demos look great — but is it truly reliable and p
 | Core Module | Capabilities & Scope | Quality Gates & Delivered Value |
 |---|---|---|
 | 🤖 **4 Archetype Auditing Engines** | Tailored checks for Pure Prompt, Tool-Augmented CLI, MCP Protocol Server, and Multi-Stage Pipeline skills | Replaces one-size-fits-all checks with targeted architectural profiling |
-| 🔍 **50+ Comprehensive Static Rules** | Covers FM structure, LK/AS links & assets, SF silent failures, SEC security, EN/PL cross-platform, CK/TC prompt health | Traceable rule IDs intercepting CRLF, Token URLs, broad exceptions, and dead links |
-| 🧬 **Skill Evolution Engine (`evolve.py`)** | SEI index (0-100), automated evolution plans (`--plan`), and instant test scaffolding (`--scaffold-test`) | Drives skills from fragile prompt-only drafts into robust multi-file architectures |
+| 🔍 **50+ Comprehensive Static Rules** | Covers FM structure, LK/AS links & assets, SF silent failures, SEC security, EN/PL cross-platform, CK/TC prompt health | Traceable rule IDs intercepting CRLF, Token URLs, consecutive hyphens, broad exceptions, and dead links |
+| 🧬 **Skill Evolution Engine (`evolve.py`)** | SEI index (0-100), automated evolution plans (`--plan`), and full multi-file scaffolding (`--scaffold-all` / `--scaffold-test`) | Drives skills from fragile prompt-only drafts into robust multi-file architectures |
 | 🏃 **Dynamic Execution Verification** | Executes target skill's actual `selftest.py` to verify exit code semantics and genuine test passes | Eliminates false confidence from pure text inspections |
 | 🎯 **Negative Destructive Sampling** | Injects invalid/corrupted test samples to verify that guardrails truly block bad inputs | Eliminates dangerous "guards that exist in name only" |
-| 🧠 **40+ Real-World Pitfalls** | Curated catalog of anti-patterns collected across hundreds of skill audits (Symptom → Cause → Fix → Prevention) | Consolidates best practices to prevent repeated errors |
+| 🧠 **50+ Real-World Pitfalls** | Curated catalog of anti-patterns collected across hundreds of skill audits (Symptom → Cause → Fix → Prevention) | Consolidates best practices to prevent repeated errors |
 | 📄 **Multi-Format Export & Auto-Fix** | Supports ANSI console summary, `--json` machine-readable output, and `--markdown` GitHub tables | Ready for CI pipelines with actionable code fix snippets |
 | 🛡️ **Zero-Dependency Read-Only** | Pure Python 3.10+ standard library with 100% read-only analysis | Runs anywhere with zero external dependencies and zero side effects |
 
+### 🧬 Skill Evolution Index Dashboard (SEI Radar Preview)
+
+Quantify skill maturity and generate actionable roadmaps plus full scaffolding with a single command:
+
+```text
+======================================================================
+       skill-doctor 技能进化度评估看板 (Skill Evolution Index)
+======================================================================
+目标技能: my-agent-skill
+综合进化指数 (SEI): 85 / 100
+----------------------------------------------------------------------
+评估维度                             | 当前得分       | 满分基线      
+----------------------------------------------------------------------
+Architecture (Multi-File Completeness)| 20         | 20
+Tooling (Deterministic Tool Scripts)  | 20         | 20
+FactCard (Fact Cards & Metric Baselines)| 20       | 20
+Safety (Read-First & Explicit Consent)| 15         | 20
+Verification (Negative Fixtures & AST)| 10         | 20
+----------------------------------------------------------------------
+```
+
 ---
 
-## 📊 Complete Auditing Pipeline Architecture
+## 📊 Complete Auditing & Evolution Pipeline Architecture
 
 ```
 [Input: Target AI Agent Skill directory]
@@ -63,11 +88,14 @@ Your AI Agent skill runs and demos look great — but is it truly reliable and p
       [Step 3: Negative Destructive Sample Verification]
       Inject corrupted inputs to ensure guardrails actively block bad data
                          │
-      [Step 4: 40+ Real-World Pitfalls Verification]
+      [Step 4: 50+ Real-World Pitfalls Verification]
       Audit against common traps, state persistence, and command drift
                          │
       [Step 5: Report Generation & Actionable Fix Hints]
       Output audit-report.txt / --json / --markdown with phased repair paths
+                         │
+      [Step 6: SEI Skill Evolution & Scaffolding (evolve.py)]
+      Compute 5D maturity index, output Evolution Plan Markdown & scaffold files
 ```
 
 ---
@@ -122,6 +150,9 @@ python scripts/evolve.py path/to/your-skill --plan -o evolution-plan.md
 # Scaffold standard test suite (tests/ and scripts/selftest.py with AST check and DY002 fixtures)
 python scripts/evolve.py path/to/your-skill --scaffold-test
 
+# Scaffold complete multi-file architecture (tests/ + references/fact-card.md baseline)
+python scripts/evolve.py path/to/your-skill --scaffold-all
+
 # Run skill-doctor's own regression test
 python scripts/selftest.py
 ```
@@ -154,7 +185,7 @@ python scripts/selftest.py
 | Reference Guide | Core Focus | When to Read | Estimated Time |
 |---|---|---|---|
 | 📋 [**Static Rules Catalog (`静态规则清单.md`)**](references/静态规则清单.md) | 50+ industrial rule definitions, origins, and repair paths | When diagnosing audit warnings and failures | 4 mins |
-| 🛡️ [**Pitfalls Database (`坑库.md`)**](references/坑库.md) | 40+ curated anti-patterns (Symptom → Cause → Fix → Prevention) | When auditing complex pipelines & edge cases | 5 mins |
+| 🛡️ [**Pitfalls Database (`坑库.md`)**](references/坑库.md) | 50+ curated anti-patterns (Symptom → Cause → Fix → Prevention) | When auditing complex pipelines & edge cases | 5 mins |
 | 🩺 [**Audit Methodology (`审查方法论.md`)**](references/审查方法论.md) | 4 archetypes, negative fixtures, audit-to-evolve bridge & healing workflow | When writing selftests or major refactorings | 4 mins |
 | 🧬 [**Evolution Methodology (`技能迭代进化方法论.md`)**](references/技能迭代进化方法论.md) | 5-stage evolution paradigm, SEI metric, tooling elevation & zero-mutation | When designing or evolving agent skills | 5 mins |
 
@@ -176,15 +207,17 @@ skill-doctor/
 ├── SUPPORT.md                        # Support channels
 ├── manifest.json                     # Skill manifest
 ├── agents/                           # Multi-agent metadata
+├── assets/                           # Visual assets
+│   └── banner.svg                    # Vector SVG Hero Banner
 ├── evals/                            # Trigger eval dataset
 ├── scripts/
 │   ├── audit.py                      # Core audit engine (4 archetypes + 50+ rules + CLI export)
 │   ├── evolve.py                     # Skill evolution engine (SEI radar + roadmap + scaffold)
 │   ├── trigger_eval.py               # Trigger evaluation runner
-│   └── selftest.py                   # Automated regression test runner (26 checks)
-└── references/                       # Rule catalog, 40+ pitfalls & methodology
+│   └── selftest.py                   # Automated regression test runner (27 checks)
+└── references/                       # Rule catalog, 50+ pitfalls & methodology
     ├── 静态规则清单.md                # 50+ Industrial rules overview
-    ├── 坑库.md                        # 40+ Real-world pitfalls (incl. pitfalls 44-48)
+    ├── 坑库.md                        # 50+ Real-world pitfalls (incl. pitfalls 44-50)
     ├── 审查方法论.md                  # 4 Archetypes & audit-to-evolve bridge
     └── 技能迭代进化方法论.md          # 5-Stage evolution paradigm & SEI model
 ```

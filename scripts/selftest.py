@@ -431,6 +431,21 @@ def main() -> int:
             raise RuntimeError(f"生成的脚手架自测应能直接跑通：\n{scaffold_res.stdout}\n{scaffold_res.stderr}")
         checks += 1
 
+        # 6. evolve --scaffold-all (完整注入自测套件 + references/fact-card.md)
+        scaffold_all_skill = tmp / "scaffold-all-target"
+        (scaffold_all_skill / "scripts").mkdir(parents=True)
+        (scaffold_all_skill / "SKILL.md").write_text(
+            "---\nname: scaffold-all-target\ndescription: 全套多文件架构脚手架目标夹具。当用户要求演示时使用。\n---\n正文\n",
+            encoding="utf-8")
+        (scaffold_all_skill / "scripts" / "tool.py").write_text(GOOD_TOOL, encoding="utf-8")
+        rc_all, out_all = run_evolve(scaffold_all_skill, "--scaffold-all")
+        if (rc_all != 0 or 
+            not (scaffold_all_skill / "scripts" / "selftest.py").is_file() or 
+            not (scaffold_all_skill / "tests" / "test_skill.py").is_file() or 
+            not (scaffold_all_skill / "references" / "fact-card.md").is_file()):
+            raise RuntimeError(f"evolve --scaffold-all 应生成完整脚手架：\n{out_all}")
+        checks += 1
+
     print(f"SELFTEST PASS ({checks} checks)")
     return 0
 

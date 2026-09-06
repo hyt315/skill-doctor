@@ -163,6 +163,29 @@ if __name__ == "__main__":
     sys.exit(main())
 """
 
+FACT_CARD_TEMPLATE = r"""# __NAME__ 核心事实卡与指标基线 (Fact Card)
+
+本事实卡由 skill-doctor 进化引擎生成，定义了 __NAME__ 技能的标准分层交付成果与正常参考基线。
+
+---
+
+## 一、分层指标事实卡模板
+
+| 层级 | 检查项 (Metric/Item) | 测量实值 (Value) | 正常基线 (Baseline) | 状态判定 (Status) |
+|---|---|---|---|:---:|
+| L1 基础层 | 核心参数/版本环境 | 实测指标 | 规范标准 | 🟢 正常 |
+| L2 核心层 | 业务运行状态 | 测量实值 | 期望基线 | 🟢 正常 |
+| L3 深水层 | 隐蔽风险/潜在缺陷 | 异常数据 | 零容忍/阈值内 | 🔴 异常 |
+
+---
+
+## 二、标准判定与处置策略
+
+- 🟢 **正常 (PASS)**：所有关键指标在基线范围内，保持常态监控；
+- 🟡 **关注 (WARN)**：存在轻微性能损耗或次要指标偏移，给出优化提示；
+- 🔴 **严重 (FAIL)**：命中深水区硬缺陷，确凿定位根因，并在向用户汇报后，请求授权执行修复。
+"""
+
 
 class SkillEvolutionAnalyzer:
     """通用 AI Agent 技能进化度分析器与方案生成器。"""
@@ -430,6 +453,21 @@ class SkillEvolutionAnalyzer:
 
         return created
 
+    def scaffold_all(self, force: bool = False) -> list[str]:
+        """为目标技能一键生成完整的 Multi-File 架构脚手架 (tests/ 与 references/fact-card.md)。"""
+        created = self.scaffold_test(force=force)
+        name = self.target_dir.name
+
+        self.refs_dir.mkdir(parents=True, exist_ok=True)
+        fact_card = self.refs_dir / "fact-card.md"
+        fact_card_code = FACT_CARD_TEMPLATE.replace("__NAME__", name)
+
+        if force or not fact_card.is_file():
+            fact_card.write_text(fact_card_code, encoding="utf-8")
+            created.append(str(fact_card))
+
+        return created
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="skill-doctor 技能迭代与进化引擎")
@@ -437,6 +475,7 @@ def main() -> int:
     parser.add_argument("--analyze", action="store_true", help="执行五维进化度量化评估，计算 SEI (0-100)")
     parser.add_argument("--plan", action="store_true", help="自动生成针对该技能的《迭代进阶方案》Markdown")
     parser.add_argument("--scaffold-test", action="store_true", help="一键生成符合规范的自测套件 (tests/ 与 selftest.py)")
+    parser.add_argument("--scaffold-all", action="store_true", help="一键生成完整多文件脚手架 (自测套件 + references/fact-card.md)")
     parser.add_argument("--json", action="store_true", help="以 JSON 格式输出评估结果")
     parser.add_argument("--output", "-o", type=str, help="将 plan 或分析结果写入指定文件")
     parser.add_argument("--force", action="store_true", help="强制覆盖已存在的文件 (用于 scaffold)")
@@ -449,6 +488,16 @@ def main() -> int:
         return 1
 
     analyzer = SkillEvolutionAnalyzer(target_path)
+
+    if args.scaffold_all:
+        created = analyzer.scaffold_all(force=args.force)
+        if created:
+            print("成功注入全套多文件架构脚手架:")
+            for p in created:
+                print(f"  + {p}")
+        else:
+            print("目标文件已存在 (使用 --force 强制覆盖)")
+        return 0
 
     if args.scaffold_test:
         created = analyzer.scaffold_test(force=args.force)
