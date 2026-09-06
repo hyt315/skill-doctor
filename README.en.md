@@ -37,6 +37,7 @@ Your AI Agent skill runs and demos look great — but is it truly reliable and p
 |---|---|---|
 | 🤖 **4 Archetype Auditing Engines** | Tailored checks for Pure Prompt, Tool-Augmented CLI, MCP Protocol Server, and Multi-Stage Pipeline skills | Replaces one-size-fits-all checks with targeted architectural profiling |
 | 🔍 **50+ Comprehensive Static Rules** | Covers FM structure, LK/AS links & assets, SF silent failures, SEC security, EN/PL cross-platform, CK/TC prompt health | Traceable rule IDs intercepting CRLF, Token URLs, broad exceptions, and dead links |
+| 🧬 **Skill Evolution Engine (`evolve.py`)** | SEI index (0-100), automated evolution plans (`--plan`), and instant test scaffolding (`--scaffold-test`) | Drives skills from fragile prompt-only drafts into robust multi-file architectures |
 | 🏃 **Dynamic Execution Verification** | Executes target skill's actual `selftest.py` to verify exit code semantics and genuine test passes | Eliminates false confidence from pure text inspections |
 | 🎯 **Negative Destructive Sampling** | Injects invalid/corrupted test samples to verify that guardrails truly block bad inputs | Eliminates dangerous "guards that exist in name only" |
 | 🧠 **40+ Real-World Pitfalls** | Curated catalog of anti-patterns collected across hundreds of skill audits (Symptom → Cause → Fix → Prevention) | Consolidates best practices to prevent repeated errors |
@@ -111,6 +112,16 @@ python scripts/audit.py path/to/your-skill --json
 # Output GitHub Markdown table
 python scripts/audit.py path/to/your-skill --markdown
 
+# --- 🚀 Skill Evolution Engine ---
+# Evaluate Skill Evolution Index (SEI 0-100) and view gap radar
+python scripts/evolve.py path/to/your-skill --analyze
+
+# Automatically generate customized evolution roadmap Markdown
+python scripts/evolve.py path/to/your-skill --plan -o evolution-plan.md
+
+# Scaffold standard test suite (tests/ and scripts/selftest.py with AST check and DY002 fixtures)
+python scripts/evolve.py path/to/your-skill --scaffold-test
+
 # Run skill-doctor's own regression test
 python scripts/selftest.py
 ```
@@ -144,7 +155,8 @@ python scripts/selftest.py
 |---|---|---|---|
 | 📋 [**Static Rules Catalog (`静态规则清单.md`)**](references/静态规则清单.md) | 50+ industrial rule definitions, origins, and repair paths | When diagnosing audit warnings and failures | 4 mins |
 | 🛡️ [**Pitfalls Database (`坑库.md`)**](references/坑库.md) | 40+ curated anti-patterns (Symptom → Cause → Fix → Prevention) | When auditing complex pipelines & edge cases | 5 mins |
-| 🩺 [**Audit Methodology (`审查方法论.md`)**](references/审查方法论.md) | 4 archetypes, negative fixtures, Evals metrics, and healing workflow | When writing selftests or major refactorings | 4 mins |
+| 🩺 [**Audit Methodology (`审查方法论.md`)**](references/审查方法论.md) | 4 archetypes, negative fixtures, audit-to-evolve bridge & healing workflow | When writing selftests or major refactorings | 4 mins |
+| 🧬 [**Evolution Methodology (`技能迭代进化方法论.md`)**](references/技能迭代进化方法论.md) | 5-stage evolution paradigm, SEI metric, tooling elevation & zero-mutation | When designing or evolving agent skills | 5 mins |
 
 ---
 
@@ -152,7 +164,7 @@ python scripts/selftest.py
 
 ```
 skill-doctor/
-├── SKILL.md                          # Core skill definition, 4-archetype dispatch & workflow
+├── SKILL.md                          # Core skill definition, dual-mode workflows (Audit + Evolve)
 ├── README.md                         # Chinese documentation
 ├── README.en.md                      # English documentation
 ├── CHANGELOG.md                      # Version history
@@ -167,12 +179,14 @@ skill-doctor/
 ├── evals/                            # Trigger eval dataset
 ├── scripts/
 │   ├── audit.py                      # Core audit engine (4 archetypes + 50+ rules + CLI export)
+│   ├── evolve.py                     # Skill evolution engine (SEI radar + roadmap + scaffold)
 │   ├── trigger_eval.py               # Trigger evaluation runner
-│   └── selftest.py                   # Automated regression test runner
+│   └── selftest.py                   # Automated regression test runner (26 checks)
 └── references/                       # Rule catalog, 40+ pitfalls & methodology
     ├── 静态规则清单.md                # 50+ Industrial rules overview
-    ├── 坑库.md                        # 40+ Real-world pitfalls
-    └── 审查方法论.md                  # 4 Archetypes & negative testing
+    ├── 坑库.md                        # 40+ Real-world pitfalls (incl. pitfalls 44-48)
+    ├── 审查方法论.md                  # 4 Archetypes & audit-to-evolve bridge
+    └── 技能迭代进化方法论.md          # 5-Stage evolution paradigm & SEI model
 ```
 
 ---

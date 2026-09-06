@@ -13,6 +13,7 @@ import tempfile
 from pathlib import Path
 
 AUDIT = Path(__file__).resolve().parent / "audit.py"
+EVOLVE = Path(__file__).resolve().parent / "evolve.py"
 TRIGGER_EVAL = Path(__file__).resolve().parent / "trigger_eval.py"
 
 GOOD_SKILL_MD = """---
@@ -110,6 +111,12 @@ BAD_FM_COMPAT = "环境要求" + "X" * 520
 
 def run_audit(target: Path, *extra: str) -> tuple[int, str]:
     result = subprocess.run([sys.executable, str(AUDIT), str(target), "--stdout", *extra],
+                            capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return result.returncode, result.stdout
+
+
+def run_evolve(target: Path, *extra: str) -> tuple[int, str]:
+    result = subprocess.run([sys.executable, str(EVOLVE), str(target), *extra],
                             capture_output=True, text=True, encoding="utf-8", errors="replace")
     return result.returncode, result.stdout
 
@@ -375,6 +382,53 @@ def main() -> int:
                             capture_output=True, text=True, encoding="utf-8", errors="replace")
         if te.returncode != 0 or "RESULT PASS" not in te.stdout:
             raise RuntimeError(f"触发评测应全绿：\n{te.stdout}\n{te.stderr}")
+        checks += 1
+
+        # 进化引擎 evolve.py 回归测试
+        # 1. evolve --analyze
+        rc_ev, out_ev = run_evolve(good, "--analyze")
+        if rc_ev != 0 or "综合进化指数 (SEI)" not in out_ev:
+            raise RuntimeError(f"evolve --analyze 应成功：\n{out_ev}")
+        checks += 1
+
+        # 2. evolve --json
+        rc_ev, out_ev = run_evolve(good, "--json")
+        if rc_ev != 0 or '"EvolutionIndex"' not in out_ev or '"CategoryScores"' not in out_ev:
+            raise RuntimeError(f"evolve --json 应输出标准 JSON：\n{out_ev}")
+        checks += 1
+
+        # 3. evolve --plan (测试 stdout 与 --output 写入)
+        rc_ev, out_ev = run_evolve(good, "--plan")
+        if rc_ev != 0 or "技能进阶与自进化方案" not in out_ev:
+            raise RuntimeError(f"evolve --plan 应输出方案：\n{out_ev}")
+        checks += 1
+
+        plan_file = good / "evolution-plan.md"
+        rc_ev, out_ev = run_evolve(good, "--plan", "--output", str(plan_file))
+        if rc_ev != 0 or not plan_file.is_file():
+            raise RuntimeError(f"evolve --plan --output 应生成文件：\n{out_ev}")
+        plan_text = plan_file.read_text(encoding="utf-8")
+        if "技能进阶与自进化方案" not in plan_text:
+            raise RuntimeError("evolution-plan.md 内容不完整")
+        checks += 1
+
+        # 4. evolve --scaffold-test
+        scaffold_skill = tmp / "scaffold-target"
+        (scaffold_skill / "scripts").mkdir(parents=True)
+        (scaffold_skill / "SKILL.md").write_text(
+            "---\nname: scaffold-target\ndescription: 脚手架注入目标夹具。当用户要求演示时使用。\n---\n正文\n",
+            encoding="utf-8")
+        (scaffold_skill / "scripts" / "tool.py").write_text(GOOD_TOOL, encoding="utf-8")
+        rc_ev, out_ev = run_evolve(scaffold_skill, "--scaffold-test")
+        if rc_ev != 0 or not (scaffold_skill / "scripts" / "selftest.py").is_file() or not (scaffold_skill / "tests" / "test_skill.py").is_file():
+            raise RuntimeError(f"evolve --scaffold-test 应生成脚手架：\n{out_ev}")
+        checks += 1
+
+        # 5. 验证自动生成的脚手架自测能够直接运行且包含负向破坏断言
+        scaffold_res = subprocess.run([sys.executable, str(scaffold_skill / "scripts" / "selftest.py")],
+                                      capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if scaffold_res.returncode != 0 or "SELFTEST PASS" not in scaffold_res.stdout:
+            raise RuntimeError(f"生成的脚手架自测应能直接跑通：\n{scaffold_res.stdout}\n{scaffold_res.stderr}")
         checks += 1
 
     print(f"SELFTEST PASS ({checks} checks)")

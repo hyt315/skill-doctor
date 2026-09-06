@@ -37,6 +37,7 @@
 |---|---|---|
 | 🤖 **四大形态专属审计引擎** | 智能适配纯提示词型、CLI 脚本增强型、MCP 协议端型、多阶段流水线型技能 | 告别一刀切，为不同架构形态提供定制化体检重点 |
 | 🔍 **50+ 项全维度静态规则** | 覆盖 FM 结构、LK/AS 链接与资产、SF 静默失效、SEC 深度安全、EN/PL 跨平台工程、CK/TC 口径与 Prompt 健康 | 逐项编号可追溯，精准拦截 CRLF、Token URL、宽捕获与断链 |
+| 🧬 **技能迭代进化引擎 (`evolve.py`)** | SEI 技能进化指数 (0-100)、演进方案自动生成 (`--plan`)、测试脚手架一键注入 (`--scaffold-test`) | 驱动技能从脆弱的纯提示词升级为工业级 multi-file 系统 |
 | 🏃 **动态实跑真实验证** | 实际拉起并运行被审技能的自测脚本（`selftest.py`），核验退出码语义诚实度 | 杜绝靠纯文本检查产生的虚假安全感 |
 | 🎯 **负向破坏用例抽查** | 针对安全与质量门禁构造破坏样本，验证拦截门是否真的会阻断违规输入 | 专抓「门名义存在、实际放行」的最危险静默失效 |
 | 🧠 **40+ 条真实通病坑库** | 从数百次真实技能审查与重构实战中沉淀的典型坑库（现象 → 根因 → 修复 → 预防） | 持续沉淀最佳实践，避免重蹈覆辙 |
@@ -111,6 +112,16 @@ python scripts/audit.py path/to/your-skill --json
 # 输出 GitHub Markdown 表格格式
 python scripts/audit.py path/to/your-skill --markdown
 
+# --- 🚀 迭代进化引擎 (Skill Evolution Engine) ---
+# 评估技能进化度，计算 SEI (0-100) 并输出雷达分析
+python scripts/evolve.py path/to/your-skill --analyze
+
+# 自动生成针对该技能的《迭代进阶方案》Markdown
+python scripts/evolve.py path/to/your-skill --plan -o evolution-plan.md
+
+# 一键注入标准自测套件 (tests/ 与 scripts/selftest.py，含 AST 校验与 DY002 负向夹具)
+python scripts/evolve.py path/to/your-skill --scaffold-test
+
 # 运行 skill-doctor 自身的回归测试
 python scripts/selftest.py
 ```
@@ -144,7 +155,8 @@ python scripts/selftest.py
 |---|---|---|---|
 | 📋 [**静态规则清单 (`静态规则清单.md`)**](references/静态规则清单.md) | 50+ 项工业级规则定义、编号出处与分级修复建议 | 审查报错排查与规则对齐时 | 4 分钟 |
 | 🛡️ [**通病坑库 (`坑库.md`)**](references/坑库.md) | 40+ 条真实开发踩坑沉淀（现象 → 根因 → 修复 → 预防） | 审查复杂技能与排查隐蔽缺陷时 | 5 分钟 |
-| 🩺 [**审查方法论 (`审查方法论.md`)**](references/审查方法论.md) | 四大形态专属要点、负向用例构造、Evals 量化与大改安全治疗流程 | 编写自测用例与执行大版本重构时 | 4 分钟 |
+| 🩺 [**审查方法论 (`审查方法论.md`)**](references/审查方法论.md) | 四大形态专属要点、负向用例构造、从审查到进化的衔接桥梁与安全治疗流程 | 编写自测用例与执行大版本重构时 | 4 分钟 |
+| 🧬 [**技能迭代进化方法论 (`技能迭代进化方法论.md`)**](references/技能迭代进化方法论.md) | 五阶段进化范式、SEI 指数模型、工具化升维与只读治理解耦铁律 | 技能迭代升级与重构时 | 5 分钟 |
 
 ---
 
@@ -152,7 +164,7 @@ python scripts/selftest.py
 
 ```
 skill-doctor/
-├── SKILL.md                          # 核心技能定义、四大形态调度与审查工作流
+├── SKILL.md                          # 核心技能定义、双模式工作流（审查体检 + 迭代进化）
 ├── README.md                         # 中文说明文档
 ├── README.en.md                      # 英文说明文档
 ├── CHANGELOG.md                      # 版本发布记录
@@ -167,12 +179,14 @@ skill-doctor/
 ├── evals/                            # 触发用例评测集
 ├── scripts/
 │   ├── audit.py                      # 核心审计引擎（四大形态 + 50+规则 + 多格式导出）
+│   ├── evolve.py                     # 迭代进化引擎（SEI五维评估 + 方案生成 + 脚手架注入）
 │   ├── trigger_eval.py               # 触发边界评测脚本
-│   └── selftest.py                   # 自动化回归自测脚本
-└── references/                       # 规则清单、40+ 通病坑库与方法论
+│   └── selftest.py                   # 自动化回归自测脚本（26 项全面回归）
+└── references/                       # 规则清单、通病坑库与方法论
     ├── 静态规则清单.md                # 50+ 项工业级规则全览
-    ├── 坑库.md                        # 40+ 条真实踩坑与避坑对策
-    └── 审查方法论.md                  # 四大形态、负向夹具与治疗流程
+    ├── 坑库.md                        # 40+ 条真实踩坑与避坑对策（含坑 44-48）
+    ├── 审查方法论.md                  # 四大形态、负向夹具与审查到进化的桥梁
+    └── 技能迭代进化方法论.md          # 五阶段进化范式、只读解耦与 SEI 模型
 ```
 
 ---
