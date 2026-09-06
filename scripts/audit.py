@@ -779,6 +779,19 @@ REPAIR_HINTS = {
 }
 
 
+def run_static_audit(root: Path) -> Findings:
+    """执行全部静态层规则检查，返回 Findings 对象。纯只读无副作用。"""
+    findings = Findings()
+    skill_text = check_structure(root, findings)
+    files = skill_files(root)
+    check_references(root, skill_text, findings)
+    check_caliber_consistency(files, root, findings)
+    check_silent_failures(files, root, findings, skill_text)
+    check_security(files, root, findings)
+    check_engineering(files, root, skill_text, findings)
+    return findings
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="skill-doctor 静态+动态检查器")
     parser.add_argument("target", help="被审技能目录")
@@ -797,14 +810,7 @@ def main() -> int:
         return 2
 
     archetype = detect_archetype(root)
-    findings = Findings()
-    skill_text = check_structure(root, findings)
-    files = skill_files(root)
-    check_references(root, skill_text, findings)
-    check_caliber_consistency(files, root, findings)
-    check_silent_failures(files, root, findings, skill_text)
-    check_security(files, root, findings)
-    check_engineering(files, root, skill_text, findings)
+    findings = run_static_audit(root)
     check_dynamic(root, findings, args.dynamic)
 
     mode = "静态+动态（selftest 已实跑）" if args.dynamic else "静态层（动态实跑与负向用例见审查与进化方法论.md）"

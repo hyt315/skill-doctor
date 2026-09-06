@@ -604,11 +604,35 @@ class SkillEvolutionAnalyzer:
             research_lines.append(f"- **挖掘目标**: {q['goal']}\n")
         research_md = "\n".join(research_lines)
 
+        # 联动静态审查结果：排查弱引用、空头支票等结构缺陷并列入待修清单
+        audit_recs = []
+        try:
+            scripts_dir = Path(__file__).resolve().parent
+            if str(scripts_dir) not in sys.path:
+                sys.path.insert(0, str(scripts_dir))
+            from audit import run_static_audit
+            audit_findings = run_static_audit(self.target_dir)
+            for level, code, msg in audit_findings.items:
+                if level in ("FAIL", "WARN"):
+                    if code == "LK005":
+                        audit_recs.append("【待修缺陷 - LK005 弱引用】消灭工作流中的弱引用逃避措辞，改写为「👉 动作：读取 [文件]」行内动作指令")
+                    elif code == "SF007":
+                        audit_recs.append("【待修缺陷 - SF007 声明式空头支票】为声明的必须执行步骤补充脚本级物料断言（如产物落盘校验），杜绝偷懒跳步")
+                    elif code in ("LK001", "LK002", "LK004"):
+                        audit_recs.append(f"【待修缺陷 - {code} 引用断链】修复缺失的文件引用或孤儿文件：{msg}")
+                    elif code in ("SF001a", "SF001b", "SF003"):
+                        audit_recs.append(f"【待修缺陷 - {code} 静默失效】修复代码中的异常吞没或退出码语义错误：{msg}")
+                    elif code in ("SK002", "SK005", "TC002"):
+                        audit_recs.append(f"【待修缺陷 - {code} 文档过载】精简 SKILL.md 行数与硬指令词，实施渐进式披露：{msg}")
+        except Exception:  # skill-doctor: allow
+            pass
+
+        all_recs = audit_recs + [r for r in ev["Recommendations"] if not any(r.startswith(ar[:15]) for ar in audit_recs)]
+        recs_lines = [f"- [ ] {r}" for r in all_recs]
+        recs_md = "\n".join(recs_lines)
+
         pitfalls_lines = [f"- **核心通病 {i+1}**：{p}" for i, p in enumerate(ev["UniversalKillerPitfalls"])]
         pitfalls_md = "\n".join(pitfalls_lines)
-
-        recs_lines = [f"- [ ] {r}" for r in ev["Recommendations"]]
-        recs_md = "\n".join(recs_lines)
 
         findings_lines = [f"- ⚠️ {f}" for f in ev["Findings"]]
         findings_md = "\n".join(findings_lines)
