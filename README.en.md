@@ -6,9 +6,9 @@
 
 <div align="center">
 
-**Industrial-grade AI Agent skill auditor & iterative evolution engine: 4 architectural engines, 50+ static rules, SEI index, multi-file scaffolding, and actionable fix hints.**
+**Industrial-grade AI Agent skill auditor & iterative evolution engine: 5 architectural engines, 50+ static rules, 4-phase closed-loop pipeline, SEI index, multi-file scaffolding, and actionable fix hints.**
 
-**给 AI Agent 技能做全维度深度体检与自进化：四大形态专属引擎、50+ 项工业级规则、SEI 进化度量化评估、多文件脚手架一键注入与自愈修复指引。**
+**给 AI Agent 技能做全维度深度体检与自进化：五大形态专属引擎、50+ 项工业级规则、四阶段闭环工程流水线、SEI 进化度量化评估、多文件脚手架一键注入与自愈修复指引。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/hyt315/skill-doctor?sort=semver)](CHANGELOG.md)
@@ -31,7 +31,7 @@ Your AI Agent skill runs and demos look great — but is it truly reliable and p
 - Embedded Git Remote Token URLs (`https://token@github.com`) or personal machine path leaks;
 - Over-inflation of hard directives (MUST/NEVER > 15 times) in `SKILL.md`, causing prompt degradation and severe IFScale compliance drops.
 
-**`skill-doctor`** is an industrial-grade meta-skill and CLI auditing engine designed for AI Agent skills. Featuring **4 Architectural Auditing Engines**, **50+ Comprehensive Static Rules**, **Dynamic Selftest Execution**, **Negative Destructive Sampling**, and **40+ Real-World Pitfalls**, it outputs actionable reports with `--json`, `--markdown`, and **Auto-Fix Guidance** to eliminate the gap between "it seems to run" and "production-grade reliability".
+**`skill-doctor`** is an industrial-grade meta-skill and CLI auditing engine designed for AI Agent skills. Featuring **5 Architectural Auditing Engines**, **50+ Comprehensive Static Rules**, **Dynamic Selftest Execution**, **Negative Destructive Sampling**, and **40+ Real-World Pitfalls**, it outputs actionable reports with `--json`, `--markdown`, and **Auto-Fix Guidance** to eliminate the gap between "it seems to run" and "production-grade reliability".
 
 ---
 
@@ -42,7 +42,7 @@ Your AI Agent skill runs and demos look great — but is it truly reliable and p
 | 🤖 **5 Archetype Auditing Engines** | Tailored checks for Pure Prompt, Tool-Augmented CLI, MCP Protocol Server, Multi-Stage Pipeline, and Hybrid skills | Eliminates one-size-fits-all dogma; never forces dummy scripts onto cognitive prompt skills |
 | 🌐 **4D Deep Domain Research Matrix** | Extracts domain keywords to generate targeted queries for Official Specs/RFCs, Killer Outages, Top Repos, and Metric Baselines | Drives skill evolution from shallow tweaks to authoritative domain enrichment |
 | 🔍 **50+ Comprehensive Static Rules** | Covers FM structure, LK/AS links & assets, SF silent failures, SEC security, EN/PL cross-platform, CK/TC prompt health | Traceable rule IDs intercepting CRLF, Token URLs, consecutive hyphens, broad exceptions, and dead links |
-| 🧬 **Skill Evolution Engine (`evolve.py`)** | Adaptive SEI index (0-100), automated evolution plans (`--plan`), and tailored scaffolding (`--scaffold-test` / `--scaffold-prompt` / `--scaffold-all`) | Upgrades skills into robust multi-file architectures with genuine test suites |
+| 🧬 **Skill Evolution Engine (`evolve.py`)** | Adaptive SEI index (0-100), 4-Phase Closed-Loop Pipeline, automated evolution plans (`--plan`), and tailored scaffolding (`--scaffold-test` / `--scaffold-prompt` / `--scaffold-all`) | Upgrades skills into robust multi-file architectures with genuine test suites |
 | 🏃 **Dynamic Execution Verification** | Executes target skill's actual `selftest.py` or `evals/` test suite to verify exit code semantics and genuine test passes | Eliminates false confidence from pure text inspections |
 | 🎯 **Negative Destructive Sampling** | Injects invalid/corrupted test samples to verify that guardrails truly block bad inputs | Eliminates dangerous "guards that exist in name only" |
 | 🧠 **50+ Real-World Pitfalls** | Curated catalog of anti-patterns collected across hundreds of skill audits (Symptom → Cause → Fix → Prevention) | Consolidates best practices to prevent repeated errors |
@@ -193,7 +193,7 @@ python scripts/selftest.py
 |---|---|---|---|
 | 📋 [**Static Rules Catalog (`静态规则清单.md`)**](references/静态规则清单.md) | 50+ industrial rule definitions, origins, and repair paths | When diagnosing audit warnings and failures | 4 mins |
 | 🛡️ [**Pitfalls Database (`坑库.md`)**](references/坑库.md) | 50+ curated anti-patterns (Symptom → Cause → Fix → Prevention) | When auditing complex pipelines & edge cases | 5 mins |
-| 🩺 [**Audit & Evolution Methodology (`审查与进化方法论.md`)**](references/审查与进化方法论.md) | 5 archetypes, negative fixtures, healing workflow, 5-stage paradigm & SEI metric | When writing selftests, deep audit & evolving skills | 5 mins |
+| 🩺 [**Audit & Evolution Methodology (`审查与进化方法论.md`)**](references/审查与进化方法论.md) | 5 archetypes, negative fixtures, healing workflow, 4-phase closed-loop pipeline & SEI metric | When writing selftests, deep audit & evolving skills | 5 mins |
 
 ---
 
@@ -201,7 +201,7 @@ python scripts/selftest.py
 
 ```
 skill-doctor/
-├── SKILL.md                          # Core skill definition, dual-mode workflows (Audit + Evolve)
+├── SKILL.md                          # Core skill definition, 4-phase closed-loop pipeline (Audit ➔ Research ➔ Refactor ➔ Verify)
 ├── README.md                         # Chinese documentation
 ├── README.en.md                      # English documentation
 ├── CHANGELOG.md                      # Version history
@@ -219,14 +219,14 @@ skill-doctor/
 ├── tests/                            # Unit tests & AST syntax validation
 │   └── test_skill.py                 # Standard unit test entry (asserting AST syntax integrity)
 ├── scripts/
-│   ├── audit.py                      # Core audit engine (4 archetypes + 50+ rules + CLI export)
+│   ├── audit.py                      # Core audit engine (5 archetypes + 40+ rules + CLI export)
 │   ├── evolve.py                     # Skill evolution engine (SEI radar + roadmap + scaffold)
 │   ├── trigger_eval.py               # Trigger evaluation runner
-│   └── selftest.py                   # Automated regression test runner (28 checks)
+│   └── selftest.py                   # Automated regression test runner (32 checks)
 └── references/                       # Rule catalog, 50+ pitfalls & methodology
     ├── 静态规则清单.md                # 50+ Industrial rules overview
     ├── 坑库.md                        # 50+ Real-world pitfalls (incl. pitfalls 44-52)
-    └── 审查与进化方法论.md            # 5 Archetypes, negative fixtures, healing & 5-stage paradigm
+    └── 审查与进化方法论.md            # 5 Archetypes, 4-phase closed-loop pipeline & SEI metric
 ```
 
 ---

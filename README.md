@@ -6,9 +6,9 @@
 
 <div align="center">
 
-**给 AI Agent 技能做全维度深度体检与自进化：四大形态专属引擎、50+ 项工业级规则、SEI 进化度量化评估、多文件脚手架一键注入与自愈修复指引。**
+**给 AI Agent 技能做全维度深度体检与自进化：五大形态专属引擎、50+ 项工业级规则、四阶段闭环工程流水线、SEI 进化度量化评估、多文件脚手架一键注入与自愈修复指引。**
 
-**Industrial-grade AI Agent skill auditor & iterative evolution engine: 4 architectural engines, 50+ static rules, SEI index, multi-file scaffolding, and actionable fix hints.**
+**Industrial-grade AI Agent skill auditor & iterative evolution engine: 5 architectural engines, 50+ static rules, 4-phase closed-loop pipeline, SEI index, multi-file scaffolding, and actionable fix hints.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/hyt315/skill-doctor?sort=semver)](CHANGELOG.md)
@@ -31,7 +31,7 @@
 - 脚本中无意内嵌了 Git Remote Token URL（`https://token@github.com`）或个人开发机绝对路径；
 - `SKILL.md` 中堆砌了几十处“必须/绝不/一律”，导致模型注意力分散、指令遵循率急剧衰减（IFScale 退化）。
 
-**`skill-doctor`** 是一个专为 AI Agent 技能打造的工业级质量审查元技能与终端审计工具。它确立了 **四大架构形态专属审计引擎**，内置 **50+ 项全维度静态规则**、**动态实跑自测**、**负向破坏用例抽查** 与 **40+ 条真实通病坑库**，并提供 `--json`、`--markdown` 导出与 **Actionable Auto-Fix 自愈建议**，将「看起来能跑」和「真正工业级可靠」之间的差距量化出来。
+**`skill-doctor`** 是一个专为 AI Agent 技能打造的工业级质量审查元技能与终端审计工具。它确立了 **五大架构形态专属审计引擎**，内置 **50+ 项全维度静态规则**、**动态实跑自测**、**负向破坏用例抽查** 与 **40+ 条真实通病坑库**，并提供 `--json`、`--markdown` 导出与 **Actionable Auto-Fix 自愈建议**，将「看起来能跑」和「真正工业级可靠」之间的差距量化出来。
 
 ---
 
@@ -42,7 +42,7 @@
 | 🤖 **五大形态专属审计引擎** | 智能适配纯提示词型、CLI 脚本增强型、MCP 协议端型、多阶段流水线型与复合型技能 | 告别一刀切，量体裁衣，因材施教，绝不强塞空脚本 |
 | 🌐 **四维深水区联网检索矩阵** | 自动提炼技能领域核心词，输出官方规范/RFC、生产级杀手坑、开源标杆与指标基线 4 维检索指令 | 驱动技能从浅层修补跃迁至深水区内容丰满与灵魂注入 |
 | 🔍 **50+ 项全维度静态规则** | 覆盖 FM 结构、LK/AS 链接与资产、SF 静默失效、SEC 深度安全、EN/PL 跨平台工程、CK/TC 口径与 Prompt 健康 | 逐项编号可追溯，精准拦截 CRLF、Token URL、连续连字符、宽捕获与断链 |
-| 🧬 **技能迭代进化引擎 (`evolve.py`)** | 形态自适应 SEI 指数 (0-100)、演进方案自动生成 (`--plan`)、专属脚手架注入 (`--scaffold-test` / `--scaffold-prompt` / `--scaffold-all`) | 驱动技能从脆弱的单文件或浅层说明升级为工业级 multi-file 系统 |
+| 🧬 **技能迭代进化引擎 (`evolve.py`)** | 形态自适应 SEI 指数 (0-100)、四阶段闭环流水线、演进方案自动生成 (`--plan`)、专属脚手架注入 (`--scaffold-test` / `--scaffold-prompt` / `--scaffold-all`) | 驱动技能从脆弱的单文件或浅层说明升级为工业级 multi-file 系统 |
 | 🏃 **动态实跑真实验证** | 实际拉起并运行被审技能的自测脚本（`selftest.py`）或评测集（`evals/`），核验退出码语义诚实度 | 杜绝靠纯文本检查产生的虚假安全感 |
 | 🎯 **负向破坏用例抽查** | 针对安全与质量门禁构造破坏样本，验证拦截门是否真的会阻断违规输入 | 专抓「门名义存在、实际放行」的最危险静默失效 |
 | 🧠 **50+ 条真实通病坑库** | 从数百次真实技能审查与重构实战中沉淀的典型坑库（现象 → 根因 → 修复 → 预防） | 持续沉淀最佳实践，避免重蹈覆辙 |
@@ -193,7 +193,7 @@ python scripts/selftest.py
 |---|---|---|---|
 | 📋 [**静态规则清单 (`静态规则清单.md`)**](references/静态规则清单.md) | 50+ 项工业级规则定义、编号出处与分级修复建议 | 审查报错排查与规则对齐时 | 4 分钟 |
 | 🛡️ [**通病坑库 (`坑库.md`)**](references/坑库.md) | 50+ 条真实开发踩坑沉淀（现象 → 根因 → 修复 → 预防） | 审查复杂技能与排查隐蔽缺陷时 | 5 分钟 |
-| 🩺 [**审查与进化方法论 (`审查与进化方法论.md`)**](references/审查与进化方法论.md) | 五大形态自适应判定、负向夹具、安全治疗、五阶段进化范式与 SEI 模型 | 编写自测、全身体检与技能迭代升级时 | 5 分钟 |
+| 🩺 [**审查与进化方法论 (`审查与进化方法论.md`)**](references/审查与进化方法论.md) | 五大形态自适应判定、负向夹具、安全治疗、四阶段闭环工程流水线与 SEI 模型 | 编写自测、全身体检与技能迭代升级时 | 5 分钟 |
 
 ---
 
@@ -201,7 +201,7 @@ python scripts/selftest.py
 
 ```
 skill-doctor/
-├── SKILL.md                          # 核心技能定义、双模式工作流（审查体检 + 迭代进化）
+├── SKILL.md                          # 核心技能定义、四阶段闭环工作流（诊断 ➔ 挖掘 ➔ 施工 ➔ 验收）
 ├── README.md                         # 中文说明文档
 ├── README.en.md                      # 英文说明文档
 ├── CHANGELOG.md                      # 版本发布记录
@@ -219,14 +219,14 @@ skill-doctor/
 ├── tests/                            # 单元测试与 AST 语法树自校验
 │   └── test_skill.py                 # 标准单元测试入口（含 AST 语法完整性断言）
 ├── scripts/
-│   ├── audit.py                      # 核心审计引擎（四大形态 + 50+规则 + 多格式导出）
+│   ├── audit.py                      # 核心审计引擎（五大形态 + 40+规则 + 多格式导出）
 │   ├── evolve.py                     # 迭代进化引擎（SEI五维评估 + 方案生成 + 脚手架注入）
 │   ├── trigger_eval.py               # 触发边界评测脚本
-│   └── selftest.py                   # 自动化回归自测脚本（28 项全面回归）
+│   └── selftest.py                   # 自动化回归自测脚本（32 项全面回归）
 └── references/                       # 规则清单、通病坑库与方法论
     ├── 静态规则清单.md                # 50+ 项工业级规则全览
     ├── 坑库.md                        # 50+ 条真实踩坑与避坑对策（含坑 44-52）
-    └── 审查与进化方法论.md            # 五大形态、负向夹具、安全治疗与五阶段进化范式
+    └── 审查与进化方法论.md            # 五大形态、四阶段闭环流水线与 SEI 评估矩阵
 ```
 
 ---
