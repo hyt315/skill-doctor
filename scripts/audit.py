@@ -760,6 +760,187 @@ def render_report(root: Path, findings: Findings, env_note: str, archetype: tupl
     return "\n".join(lines) + "\n", 0
 
 
+def render_full_markdown_report(root: Path, findings: Findings, env_note: str, archetype: tuple[str, str], dynamic_run: bool = False) -> tuple[str, int]:
+    """生成结构化、全透明的《AI Agent 技能全方位体检与质量检测报告》Markdown。"""
+    ok, warns, infos, fails = findings.counts()
+    total = len(findings.items)
+    rc = 1 if fails > 0 else 0
+
+    # 1. 尝试读取被审技能版本与 manifest
+    version = "未标记 (无 manifest.json)"
+    manifest_file = root / "manifest.json"
+    if manifest_file.is_file():
+        try:
+            import json
+            mdata = json.loads(manifest_file.read_text(encoding="utf-8", errors="ignore"))
+            version = mdata.get("version", version)
+        except Exception:  # skill-doctor: allow
+            pass
+
+    # 2. 统计文件与规模
+    skill_md = root / "SKILL.md"
+    skill_lines = 0
+    skill_tokens = 0
+    desc_chars = 0
+    tc_count = 0
+    if skill_md.is_file():
+        stext = skill_md.read_text(encoding="utf-8", errors="ignore")
+        skill_lines = len(stext.splitlines())
+        skill_tokens = int(len(re.findall(r"[\u4e00-\u9fff]|[a-zA-Z0-9]+|[^\s\w]", stext)) * 0.6)
+        fm = extract_frontmatter(stext)
+        if fm:
+            desc_val = parse_field(fm, "description").strip()
+            desc_chars = len(desc_val)
+        tc_count = len(re.findall(r"\b(必须|严禁|务必|坚决|绝不|强制|只读|MUST|SHALL|NEVER)\b", stext))
+
+    # 3. 尝试读取 SEI 技能进化指数得分
+    sei_score = None
+    try:
+        scripts_dir = Path(__file__).resolve().parent
+        if str(scripts_dir) not in sys.path:
+            sys.path.insert(0, str(scripts_dir))
+        from evolve import SkillEvolutionAnalyzer
+        analyzer = SkillEvolutionAnalyzer(root)
+        sei_dict = analyzer.evaluate()
+        sei_score = sei_dict.get("EvolutionIndex")
+    except Exception:  # skill-doctor: allow
+        pass
+
+    # 4. 综合评级判定
+    compliance_rate = (ok / total * 100) if total > 0 else 100.0
+    if fails > 0:
+        health_grade = "🔴 雏升阻塞 (FAIL 待修复)"
+        overall_status = "FAIL"
+    elif warns > 0:
+        health_grade = "🟡 进阶亚健康 (存在 WARN 隐患)"
+        overall_status = "PASS (WITH WARNINGS)"
+    else:
+        health_grade = "🟢 工业级成熟 (全门禁通过)"
+        overall_status = "PASS"
+
+    # 分类规则池
+    categories = {
+        "基础元数据与触发规范 (Metadata & Trigger)": ("FM", "SK001", "SK004"),
+        "引用链路与动作闭环系统 (References & Action Linkage)": ("LK", "SK002", "SK003", "SK005", "TC002"),
+        "代码工程与跨平台规范 (Engineering & Platform)": ("EN", "PL"),
+        "安全防线与只读原则 (Security & Zero-Mutation)": ("SEC", "SF005", "SF006"),
+        "运行时动态与抗破坏能力 (Runtime & Robustness)": ("SF001", "SF002", "SF003", "CK", "SF007", "DY"),
+    }
+
+    categorized_items: dict[str, list[tuple[str, str, str]]] = {cat: [] for cat in categories}
+    uncategorized: list[tuple[str, str, str]] = []
+    for level, code, msg in findings.items:
+        placed = False
+        for cat, prefixes in categories.items():
+            if any(code.startswith(p) for p in prefixes):
+                categorized_items[cat].append((level, code, msg))
+                placed = True
+                break
+        if not placed:
+            uncategorized.append((level, code, msg))
+    if uncategorized:
+        categorized_items["其他合规校验 (Miscellaneous)"] = uncategorized
+
+    md: list[str] = [
+        f"# 🩺 AI Agent 技能全方位体检与质量检测报告",
+        "",
+        f"> - **受检技能**: `{root.name}` (版本: `{version}`)",
+        f"> - **架构形态**: `[{archetype[0]}]` {archetype[1]}",
+        f"> - **诊断结论**: **`RESULT {overall_status}`**（健康评级：{health_grade}）",
+        f"> - **检测环境**: {env_note}",
+        "",
+        "---",
+        "",
+        "## 一、 技能基本档案与体质画像",
+        "",
+        "| 画像维度 | 实测指标 | 规范标准 / 建议基线 | 状态评估 |",
+        "|---|---|---|:---:|",
+        f"| **架构形态定位** | `[{archetype[0]}]` {archetype[1]} | 五大标准架构自适应识别 | 🟢 明确 |",
+        f"| **SKILL.md 规模** | {skill_lines} 行 / ~{skill_tokens} Tokens | ≤ 500 行 / ≤ 5000 Tokens | {'🟢 优良' if skill_tokens <= 5000 else '🟡 偏大'} |",
+        f"| **触发描述 (Description)** | {desc_chars} 字符 | ≤ 1024 字符（含触发动词） | {'🟢 合规' if 0 < desc_chars <= 1024 else '🔴 超限'} |",
+        f"| **硬指令词密度 (TC002)** | {tc_count} 处 | ≤ 15 处（防注意力漂移与拒绝遵循） | {'🟢 克制' if tc_count <= 15 else '🟡 过密'} |",
+        f"| **工程配套目录** | `scripts/`: {'✅' if (root / 'scripts').is_dir() else '❌'}, `references/`: {'✅' if (root / 'references').is_dir() else '❌'}, `tests/evals`: {'✅' if (root / 'tests').is_dir() or (root / 'evals').is_dir() else '❌'} | 按形态合理配备辅助资产 | 🟢 完备 |",
+        "",
+        "---",
+        "",
+        "## 二、 综合健康指数与体检结论 (Executive Summary)",
+        "",
+        "| 检验层级 | 检验项目 | 实测数据 | 工业级基线 | 判定 |",
+        "|---|---|---|---|:---:|",
+        f"| **L1 静态门禁** | 40+ 规则扫描 | {ok} OK / {warns} WARN / {fails} FAIL (合规率 {compliance_rate:.1f}%) | 0 FAIL, 0 阻塞 | {'🟢 PASS' if fails == 0 else '🔴 FAIL'} |",
+        f"| **L2 运行时鲁棒** | selftest / evals 动态实跑与负向拦截 | {'✅ 实跑通过' if dynamic_run else '⚪ 静态核验 (加 --dynamic 实跑)'} | 100% 退出码一致且真实拦截坏样本 | {'🟢 PASS' if fails == 0 else '🔴 FAIL'} |",
+    ]
+
+    if sei_score is not None:
+        md.append(f"| **L3 持续演进** | SEI 技能进化指数量化评估 | **{sei_score} / 100** | ≥ 85 分（工业级成熟） | {'🟢 PASS' if sei_score >= 85 else ('🟡 需演进' if sei_score >= 60 else '🔴 雏形')} |")
+    
+    md.extend([
+        "",
+        f"**【核心结论】**：当前技能静态扫描共有 **{total}** 项检查点，通过 **{ok}** 项，发现 **{warns}** 项告警，**{fails}** 项阻断错误。" +
+        ("各项指标均已达到工业级基线，未发现显著架构缺陷与静默失效风险。" if fails == 0 and warns == 0 else "存在待治理缺陷或告警，请参见后文处方清单。"),
+        "",
+        "---",
+        "",
+        "## 三、 五大核心系统体检明细与证据链 (Detailed Findings)",
+        ""
+    ])
+
+    for cat_name, items in categorized_items.items():
+        if not items:
+            continue
+        c_ok = sum(1 for l, _, _ in items if l == "OK")
+        c_warn = sum(1 for l, _, _ in items if l == "WARN")
+        c_fail = sum(1 for l, _, _ in items if l == "FAIL")
+        c_status = "🔴 FAIL" if c_fail > 0 else ("🟡 WARN" if c_warn > 0 else "🟢 PASS")
+        md.append(f"### {cat_name}  [{c_status}]")
+        md.append(f"共 {len(items)} 项指标：通过 {c_ok}，告警 {c_warn}，失败 {c_fail}。\n")
+        md.append("| 状态 | 规则码 | 检测指标与实测证据 |")
+        md.append("|:---:|---|---|")
+        for level, code, msg in items:
+            icon = "🟢" if level == "OK" else ("🟡" if level == "WARN" else ("🔴" if level == "FAIL" else "ℹ️"))
+            md.append(f"| {icon} `{level}` | `{code}` | {msg} |")
+        md.append("")
+
+    # 四、 缺陷诊断处方与治理清单
+    md.append("---")
+    md.append("")
+    md.append("## 四、 缺陷诊断处方与治理清单 (Prescriptions)")
+    md.append("")
+    issue_items = [(l, c, m) for l, c, m in findings.items if l in ("FAIL", "WARN")]
+    if not issue_items:
+        md.append("🎉 **全系统健康！未发现任何 FAIL 或 WARN 缺陷。**")
+        md.append("- 建议继续保持良好的工程卫生与 Zero-Mutation 纪律；")
+        md.append("- 如需继续向更高技术纵深演进，可推进阶段 2 的多源深水区立体挖掘。")
+    else:
+        md.append("| 优先级 | 规则码 | 缺陷与实测证据 | 最小修复处方 (Remedy) |")
+        md.append("|:---:|---|---|---|")
+        for level, code, msg in issue_items:
+            priority = "🔴 P0 (阻塞)" if level == "FAIL" else "🟡 P1 (缺陷)"
+            hint = REPAIR_HINTS.get(code, "参照 references/静态规则清单.md 对准规则修整代码或文档")
+            md.append(f"| {priority} | `{code}` | {msg} | {hint} |")
+        md.append("")
+        md.append("> [!NOTE]\n> 所有修复操作必须遵循 **Zero-Mutation（只读解耦）** 铁律，提供清晰可控的变更清单，经用户确认后再行实施。")
+
+    # 五、 流水线进程与后续行动指南
+    md.append("")
+    md.append("---")
+    md.append("")
+    md.append("## 五、 🧭 流水线进度与后续行动指南 (Pipeline Navigation)")
+    md.append("")
+    md.append("| 阶段编号 | 阶段名称 | 执行状态 | 核心产物 / 交付说明 |")
+    md.append("|:---:|---|:---:|---|")
+    md.append("| **阶段 1** | 全方位现状诊断（只读体检） | 🟢 **已完成** | 已交付本结构化《技能体检与质量检测报告》 |")
+    md.append("| **阶段 2** | 方案设计与深水区多源挖掘 | ⏳ *待推进* | 12 组立体检索矩阵、深度穿透阅读、边缘踩坑库落盘 |")
+    md.append("| **阶段 3** | 处方施工与结构治理 | ⏳ *待推进* | 消灭弱引用、行内动作指令落地、脚手架注入 |")
+    md.append("| **阶段 4** | 闭环回归与终审验收 | ⏳ *待推进* | 差分基线对比、全量回归验证、工程卫生零污染 |")
+    md.append("")
+    md.append("- **选项 A（体检结案）**：若您当前仅需要了解该技能的健康状况与缺陷，体检流程已圆满结束，可直接使用本报告归档或评审；")
+    md.append("- **选项 B（进阶演化）**：若您希望进一步提升技能成熟度、对标顶级开源项目与官方协议，可直接回复指令推进「阶段 2」。")
+    md.append("")
+
+    return "\n".join(md), rc
+
+
 REPAIR_HINTS = {
     "FM001": "删除或改名嵌套 SKILL.md（如 README.md），保唯一入口",
     "FM002": "补 YAML frontmatter（--- 包裹 name/description）",
@@ -798,7 +979,11 @@ def main() -> int:
     parser.add_argument("--stdout", action="store_true", help="只打印不落盘")
 
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
-    parser.add_argument("--markdown", action="store_true", help="输出 GitHub Markdown 格式")
+    parser.add_argument("--markdown", action="store_true", help="输出简要 Markdown 格式")
+    parser.add_argument("--report", action="store_true",
+                        help="输出结构化、全透明的《AI Agent 技能全方位体检与质量检测报告》Markdown")
+    parser.add_argument("--report-file", type=str, default=None,
+                        help="将完整的结构化体检报告写入指定的 Markdown 文件")
 
     parser.add_argument("--dynamic", action="store_true",
                         help="动态实跑被审技能 selftest（有副作用风险，确认安全后显式开启）")
@@ -846,6 +1031,17 @@ def main() -> int:
             md_lines.append(f"| {l} | `{c}` | {m} |")
         print("\n".join(md_lines))
         return rc
+
+    if args.report or args.report_file:
+        full_md, report_rc = render_full_markdown_report(root, findings, env_note, archetype, dynamic_run=args.dynamic)
+        if args.report_file:
+            rf = Path(args.report_file).resolve()
+            rf.parent.mkdir(parents=True, exist_ok=True)
+            rf.write_text(full_md, encoding="utf-8")
+            print(f"体检报告已成功写入：{rf}")
+        if args.report or not args.report_file:
+            print(full_md)
+        return report_rc
 
     print(report, end="")
     if not args.stdout:

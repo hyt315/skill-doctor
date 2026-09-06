@@ -326,25 +326,81 @@ class SkillEvolutionAnalyzer:
         domain = " ".join(domain_parts) if domain_parts else self.skill_name.replace("-", " ")
 
         queries = [
+            # 维度 1：GitHub 同类开源技能与 Prompt 标杆 (Peer Agent Skills) [3 组]
             {
                 "dimension": "维度 1：GitHub 同类开源技能标杆 (Peer Agent Skills)",
+                "sub_category": "Prompt 架构与分步编排",
                 "query": f'{domain} (skill OR prompt OR agent) site:github.com "SKILL.md"',
-                "goal": "检索 GitHub 上同领域的开源 Agent 技能，深度对标其 SKILL.md 的 Prompt 架构设计、步骤编排、渐进披露范式与负向边界约束。",
+                "goal": "检索 GitHub 上同领域的开源 Agent 技能，深度对标其 SKILL.md 的 Prompt 架构设计、步骤编排与就近动作范式。",
+            },
+            {
+                "dimension": "维度 1：GitHub 同类开源技能标杆 (Peer Agent Skills)",
+                "sub_category": "触发词与负向边界设计",
+                "query": f'{domain} (skill OR prompt) site:github.com "triggers" OR "when to use" OR "negative prompt" OR "boundaries"',
+                "goal": "对标同类技能的触发条件设计、负向约束与反幻觉边界声明。",
+            },
+            {
+                "dimension": "维度 1：GitHub 同类开源技能标杆 (Peer Agent Skills)",
+                "sub_category": "多文件资产解耦与事实卡",
+                "query": f'{domain} (agent OR workflow) site:github.com "references" OR "cheatsheet" OR "playbook" OR "fact-card"',
+                "goal": "对标领域专业知识库下沉、分层事实卡与参考文档组织模式。",
+            },
+            # 维度 2：GitHub 顶级开源工程实现与工具生态 (Top Domain OSS & Tooling) [3 组]
+            {
+                "dimension": "维度 2：GitHub 顶级开源工程实现 (Top Domain OSS)",
+                "sub_category": "明星项目底层工程与架构",
+                "query": f"{domain} site:github.com stars:>1000 best practices architecture tooling",
+                "goal": "参考同领域 1k+ Stars 明星开源项目的底层工程实现、模块解耦与排查算法。",
             },
             {
                 "dimension": "维度 2：GitHub 顶级开源工程实现 (Top Domain OSS)",
-                "query": f"{domain} site:github.com stars:>1000 best practices architecture tooling",
-                "goal": "参考同领域 1k+ Stars 明星开源项目的底层工程实现、工具脚本组织、排查算法与异常处理机制。",
+                "sub_category": "原生命令行工具与参数设计",
+                "query": f"{domain} (cli OR sdk OR parser OR benchmark) site:github.com language:python OR language:go",
+                "goal": "参考同领域成熟 CLI 工具的参数设计、跨平台抽象与机读 JSON 导出实践。",
+            },
+            {
+                "dimension": "维度 2：GitHub 顶级开源工程实现 (Top Domain OSS)",
+                "sub_category": "专家排查脚本与高效命令",
+                "query": f"{domain} diagnostic tools troubleshooting commands cheatsheet scripts automation",
+                "goal": "挖掘资深工程师日常使用的排查命令集、探测脚本与自动化探针实现。",
+            },
+            # 维度 3：底层原理与权威规范 (RFC & Specs) [3 组]
+            {
+                "dimension": "维度 3：底层原理与权威规范 (RFC & Specs)",
+                "sub_category": "官方标准协议与技术白皮书",
+                "query": f"{domain} RFC specification official documentation architecture internals",
+                "goal": "检索 IETF RFC 标准、官方白皮书或系统内核原理，确立权威专业的技术术语与分层排查依据。",
             },
             {
                 "dimension": "维度 3：底层原理与权威规范 (RFC & Specs)",
-                "query": f"{domain} RFC specification official documentation architecture internals",
-                "goal": "检索官方标准规范、底层通信协议或内核原理，建立专业严谨的技术术语与分层诊断依据。",
+                "sub_category": "健康指标基线与 SLA 阈值",
+                "query": f"{domain} standard baseline metrics normal range threshold timeout SLA benchmarks",
+                "goal": "检索行业权威的性能基线、正常工作参数阈值与超时窗口，填充量化事实卡。",
+            },
+            {
+                "dimension": "维度 3：底层原理与权威规范 (RFC & Specs)",
+                "sub_category": "协议状态机与错误码规范",
+                "query": f"{domain} protocol state machine lifecycle error codes status transition specification",
+                "goal": "检索通信协议或业务生命周期状态机转移规则与官方标准错误码字典。",
+            },
+            # 维度 4：生产级故障、隐蔽踩坑与边缘冷门探索池 (Killer Pitfalls & Fringe Edge Cases) [3 组]
+            {
+                "dimension": "维度 4：生产级故障与深水杀手坑 (Killer Pitfalls)",
+                "sub_category": "重大生产事故复盘与高发通病",
+                "query": f"{domain} production outage postmortem common pitfalls failure modes incident review",
+                "goal": "挖掘生产环境重大事故复盘 (Postmortem)、常见高频踩坑与系统脆弱点。",
             },
             {
                 "dimension": "维度 4：生产级故障与深水杀手坑 (Killer Pitfalls)",
-                "query": f"{domain} production outage common pitfalls failure modes edge cases race condition",
-                "goal": "挖掘生产环境隐蔽踩坑、静默失效与边缘死锁案例，沉淀至 references/ 坑库以供防范。",
+                "sub_category": "死锁、竞争与静默失效",
+                "query": f"{domain} edge cases race condition memory leak silent failure deadlock starvation",
+                "goal": "排查深水区并发竞争、资源死锁、内存泄漏与静默失效（放行坏数据）等严重隐患。",
+            },
+            {
+                "dimension": "维度 4：生产级故障与深水杀手坑 (Killer Pitfalls)",
+                "sub_category": "【冷门长尾探索池】极端特异性环境",
+                "query": f"{domain} (windows OR linux OR proxy OR vpn OR container OR dual-stack OR ipv6) unexpected corner cases",
+                "goal": "【边缘与冷门长尾探索池】广泛探索双栈回退、虚拟网络切换、跨平台差异、代理穿透等看似边缘但在复杂生产环境下致命的反直觉特异性 Bug！",
             },
         ]
         return domain, queries
@@ -684,12 +740,14 @@ class SkillEvolutionAnalyzer:
 请在优化与丰富技能时，调用联网搜索工具依次执行以下 4 维深水区深度挖掘：
 
 {research_md}
-### 挖掘成果沉淀建议
-1. **GitHub 同类开源技能对标**：对标开源同类 Agent 技能的 Prompt 结构、分步编排与防幻觉边界，融入 `SKILL.md`；
-2. **生产级隐蔽踩坑库**：在 `references/` 下新增 `{name}-pitfalls.md`，记录真实高发故障与反常识踩坑；
-3. **可执行探针核验 (Sanity Probes)**：代码片段必须通过 `ast.parse` 或语法编译探针，废弃超过 2 年未更新的旧命令；
-4. **分层事实卡与正常基线**：在 `references/fact-card.md` 中规范客观指标正常范围与异常阈值；
-5. **离线弹性降级**：若处于无网环境或搜索受限，执行 `python scripts/evolve.py {name} --offline-fallback` 自动注入启发式物料解锁工序。
+#### 挖掘成果沉淀建议（三层立体检索与深度穿透规范）
+1. **广度扇出与冷门长尾探索**：依次执行 12 组多角度立体检索，特别关注【冷门长尾探索池】中的边缘特异性隐患；
+2. **深度穿透阅读 (Deep Reading)**：严禁走马观花仅看搜索摘要！挑选 3~5 篇权威 RFC/官方白皮书与顶级开源代码，深入精读全文；
+3. **过程 100% 透明公开**：在会话中公开披露已执行的 Query 清单、深入阅读的来源 URL、以及从看似无关的资料中提炼出的实战价值；
+4. **可执行探针核验 (Sanity Probes)**：代码片段必须通过 `ast.parse` 或语法编译探针，废弃超过 2 年未更新的旧命令；
+5. **生产级隐蔽踩坑库**：在 `references/` 下新增 `{name}-pitfalls.md`，记录真实高发故障与反常识踩坑；
+6. **分层事实卡与正常基线**：在 `references/fact-card.md` 中规范客观指标正常范围与异常阈值；
+7. **离线弹性降级**：若处于无网环境或搜索受限，执行 `python scripts/evolve.py {name} --offline-fallback` 自动注入启发式物料解锁工序。
 
 ---
 
@@ -718,8 +776,8 @@ class SkillEvolutionAnalyzer:
 """
         else:
             plan += f"""- **形态定位**: 确定性工具 / 复合型（{arch_code}）
-- **核心准则**: 编写纯原生、零外部依赖的只读自动化收集/排查脚本，严禁排查阶段修改系统；
-- **自动化验证**: 运行 `python scripts/evolve.py {name} --scaffold-test` 注入带 AST 解析与 DY002 破坏夹具的回归套件。
+- **核心准则**: 严格遵循 Zero-Mutation 纪律，排查 100% 只读；破坏性变更拆解独立工单并须用户授权；
+- **自动化回归**: 运行 `python scripts/evolve.py {name} --scaffold-test` 注入带 AST 校验与负向破坏夹具的 `selftest.py`。
 """
 
         plan += f"""
@@ -752,101 +810,85 @@ class SkillEvolutionAnalyzer:
 """
         return plan
 
-    def scaffold_prompt(self, force: bool = False) -> list[str]:
-        """为纯提示词型/认知型技能一键生成标准 evals/trigger_cases.json 评测集。"""
+    def scaffold_prompt(self, force: bool = False) -> list[Path]:
+        """纯提示词/认知型技能脚手架注入：生成 evals/trigger_cases.json。"""
+        self.evals_dir.mkdir(exist_ok=True)
+        target = self.evals_dir / "trigger_cases.json"
+        if target.is_file() and not force:
+            return []
+        target.write_text(PROMPT_EVALS_TEMPLATE.replace("__NAME__", self.skill_name), encoding="utf-8")
+        return [target]
+
+    def scaffold_test(self, force: bool = False) -> list[Path]:
+        """确定性工具型技能脚手架注入：生成 tests/ 与 scripts/selftest.py。"""
         created = []
-        name = self.skill_name
+        self.tests_dir.mkdir(exist_ok=True)
+        test_skill = self.tests_dir / "test_skill.py"
+        if force or not test_skill.is_file():
+            test_skill.write_text(TEST_CODE_TEMPLATE.replace("__NAME__", self.skill_name), encoding="utf-8")
+            created.append(test_skill)
 
-        self.evals_dir.mkdir(parents=True, exist_ok=True)
-        cases_file = self.evals_dir / "trigger_cases.json"
-        content = PROMPT_EVALS_TEMPLATE.replace("__NAME__", name)
-
-        if force or not cases_file.is_file():
-            cases_file.write_text(content, encoding="utf-8")
-            created.append(str(cases_file))
+        self.scripts_dir.mkdir(exist_ok=True)
+        selftest = self.scripts_dir / "selftest.py"
+        if force or not selftest.is_file():
+            selftest.write_text(SELFTEST_CODE_TEMPLATE.replace("__NAME__", self.skill_name), encoding="utf-8")
+            created.append(selftest)
 
         return created
 
-    def scaffold_test(self, force: bool = False) -> list[str]:
-        """为目标技能一键生成标准的 tests/test_skill.py 与 scripts/selftest.py。"""
-        created = []
-        name = self.skill_name
-
-        self.tests_dir.mkdir(parents=True, exist_ok=True)
-        self.scripts_dir.mkdir(parents=True, exist_ok=True)
-
-        test_py = self.tests_dir / "test_skill.py"
-        selftest_py = self.scripts_dir / "selftest.py"
-
-        test_code = TEST_CODE_TEMPLATE.replace("__NAME__", name)
-        selftest_code = SELFTEST_CODE_TEMPLATE.replace("__NAME__", name)
-
-        if force or not test_py.is_file():
-            test_py.write_text(test_code, encoding="utf-8")
-            created.append(str(test_py))
-
-        if force or not selftest_py.is_file():
-            selftest_py.write_text(selftest_code, encoding="utf-8")
-            created.append(str(selftest_py))
-
-        return created
-
-    def scaffold_all(self, force: bool = False) -> list[str]:
-        """为目标技能一键生成完整的 Multi-File 架构脚手架 (自测套件 + references/fact-card.md)。"""
+    def scaffold_all(self, force: bool = False) -> list[Path]:
+        """复合型技能脚手架注入：生成全套测试套件与分层事实卡 references/fact-card.md。"""
         created = self.scaffold_test(force=force)
-        name = self.skill_name
-
-        self.refs_dir.mkdir(parents=True, exist_ok=True)
+        self.refs_dir.mkdir(exist_ok=True)
         fact_card = self.refs_dir / "fact-card.md"
-        fact_card_code = FACT_CARD_TEMPLATE.replace("__NAME__", name)
-
         if force or not fact_card.is_file():
-            fact_card.write_text(fact_card_code, encoding="utf-8")
-            created.append(str(fact_card))
+            fact_card.write_text(FACT_CARD_TEMPLATE.replace("__NAME__", self.skill_name), encoding="utf-8")
+            created.append(fact_card)
+        return created
 
     def generate_offline_pitfalls(self, force: bool = False) -> Path:
-        """在弱网/断网或无搜索工具环境下，激活 Tier-3 离线启发式降级引擎一键生成基础避坑库与事实卡。"""
-        self.refs_dir.mkdir(parents=True, exist_ok=True)
+        """Tier-3 离线启发式降级：在无网环境下生成基础避坑知识库与事实卡，解除工单阻断。"""
+        self.refs_dir.mkdir(exist_ok=True)
         pitfalls_file = self.refs_dir / f"{self.skill_name}-pitfalls.md"
         domain, _ = self.generate_research_queries()
-        arch_code, arch_desc = self.detect_archetype()
+        
+        content = f"""# {self.skill_name} 核心避坑指南 (Tier-3 离线启发式降级生成)
 
-        content = f"""# 《{self.skill_name}》领域避坑库与基线指南 (Domain Pitfalls & Baselines)
-
-> - **领域归属**: `{domain}`
-> - **形态架构**: `[{arch_code}]` {arch_desc}
-> - **生成模式**: `Tier-3 离线专家启发式降级生成 (Offline Heuristic Scaffolding)`
-> - **核验规范**: 严禁引入年代过久(>2年未维护)陈旧命令；脚本代码必须通过静态语法编译(AST Probe)
-
----
-
-## 一、高发隐蔽故障与死锁避坑 (Critical Failure Modes)
-
-1. **静默失败与退出码失真**：
-   - 现象：底层脚本抛出异常或外部命令失败时被 `except: pass` 吞没，返回码依然为 0，导致 Agent 误判任务成功。
-   - 对策：严格校验每一步执行结果，遇致命错误立即抛出显式非零退出码 (`sys.exit(1)`)。
-
-2. **交互挂死与无超时控制**：
-   - 现象：调用外部 CLI 或子进程时未设置超时 (`timeout`)，或包含等待终端输入提示，在非交互式 Agent Shell 中永久挂死。
-   - 对策：禁止交互式输入，外部进程调用统一附加超时保护机制。
-
-3. **依赖假设与跨平台断链**：
-   - 现象：硬编码绝对路径或假定特定外部工具已全局安装，换机即报找不到文件或命令。
-   - 对策：排查前检查关键依赖存在性，优先使用纯标准库或提供优雅探测提示。
+> [!NOTE]
+> 本文件由 `skill-doctor` 进化引擎的 **Tier-3 离线启发式降级机制** 自动生成。
+> 当前处于无网或检索受限环境，系统调用内置的通用专家知识库生成此基础防御物料，已解除工单强门禁阻断。
+> 建议在具备全网在线条件后，重新执行 12 组多角度立体检索以深化领域知识。
 
 ---
 
-## 二、标准交付成果：分层事实卡基线 (Fact Card Baselines)
-
-| 层级 | 检查项 | 实测测量方式 | 正常基线标准 | 异常判定与对策 |
-|---|---|---|---|:---:|
-| L1 基础层 | 核心配置与入口完备度 | 检查核心入口文件存在且语法合法 | 文件存在且 AST 校验 0 错误 | 🔴 缺失则阻断执行 |
-| L1 基础层 | 执行超时与安全边界 | 脚本运行耗时观测 | 执行时间 < 30 秒 | 🟡 超时则告警排查 |
-| L2 进阶层 | 异常退出与错误阻断 | 负向破坏测试 | 遇非法输入正确退出非 0 | 🔴 静默放行则阻断 |
+## 领域定位
+- **技术领域**: `{domain}`
+- **生成模式**: `Tier-3 离线启发式降级 (Offline Heuristic Fallback)`
+- **基线规范**: 工业级无破坏原则 (Zero-Mutation) + 跨平台鲁棒性
 
 ---
 
-## 三、代码片段可执行探针准则 (Executable Sanity Probes)
+## 一、 通用生产级通病与避坑对策
+
+### 1. 跨平台路径与文件编码陷阱
+- **病症**：脚本使用硬编码反斜杠 `\\` 或仅在 Windows 上测试的绝对路径，在 Linux/macOS 环境下解析失败；
+- **防范**：Python 强制使用 `pathlib.Path`；Bash 强制保持标准 LF 换行并声明 `set -euo pipefail`。
+
+### 2. 静默失效与假性全绿 (Silent Failures)
+- **病症**：代码使用裸 `except:` 或 `except Exception: pass` 吞没异常，导致底层核心命令报错但整体假装成功；
+- **防范**：严禁无告警宽捕获吞异常；失败路径必须显式打印根因并保证退出码语义正常 (`sys.exit(1)`)。
+
+### 3. 指令词膨胀与注意力漂移 (Instruction Inflation)
+- **病症**：SKILL.md 堆砌过多“必须/严禁”，导致大模型注意力分散、遵循率急剧下降；
+- **防范**：将细节参数与长篇配置下沉至 `references/`，主流程使用【就近内联动作指令】按需读取。
+
+### 4. 只读排查与破坏性治理混淆
+- **病症**：诊断排查命令暗含修改或重启操作，造成未经授权的系统变更；
+- **防范**：严守 **Zero-Mutation** 铁律，体检诊断 100% 只读；写操作拆分为独立建议，明确须用户授权后手动执行。
+
+---
+
+## 二、 资产演进与核验准则
 
 若在后续联网或人工补充代码时，必须执行以下量化核验：
 1. **时效性核验**：优先选用近 2 年内活跃更新的官方规范或 GitHub 高 Star 仓库；
@@ -877,11 +919,13 @@ def main() -> int:
     parser.add_argument("path", nargs="?", default=".", help="目标技能目录路径 (默认当前目录)")
     parser.add_argument("--analyze", action="store_true", help="执行五维进化度量化评估，计算 SEI (0-100)")
     parser.add_argument("--plan", action="store_true", help="自动生成针对该技能的《迭代进阶方案》Markdown")
-    parser.add_argument("--research-plan", action="store_true", help="提炼该技能领域关键词，输出四维深水区联网检索矩阵")
+    parser.add_argument("--research-plan", action="store_true", help="提炼该技能领域关键词，输出 12 组多角度立体联网检索矩阵")
     parser.add_argument("--offline-fallback", action="store_true", help="在无网或弱网环境下，激活 Tier-3 离线启发式降级引擎一键生成基础避坑库与事实卡")
     parser.add_argument("--scaffold-test", action="store_true", help="一键生成符合规范的自测套件 (tests/ 与 selftest.py)")
     parser.add_argument("--scaffold-prompt", action="store_true", help="一键生成纯提示词型评测套件 (evals/trigger_cases.json)")
     parser.add_argument("--scaffold-all", action="store_true", help="一键生成完整多文件脚手架 (自测套件 + references/fact-card.md)")
+    parser.add_argument("--report", action="store_true", help="调用检查器生成结构化《AI Agent 技能全方位体检与质量检测报告》Markdown")
+    parser.add_argument("--report-file", type=str, default=None, help="将完整的结构化检测报告写入指定 Markdown 文件")
     parser.add_argument("--json", action="store_true", help="以 JSON 格式输出评估结果")
     parser.add_argument("--output", "-o", type=str, help="将 plan 或分析结果写入指定文件")
     parser.add_argument("--force", action="store_true", help="强制覆盖已存在的文件 (用于 scaffold)")
@@ -894,6 +938,25 @@ def main() -> int:
         return 1
 
     analyzer = SkillEvolutionAnalyzer(target_path)
+
+    if args.report or args.report_file:
+        try:
+            from audit import run_static_audit, detect_archetype, render_full_markdown_report
+            archetype = detect_archetype(target_path)
+            findings = run_static_audit(target_path)
+            env_note = f"环境：{sys.version.split()[0]} / 进化分析层"
+            full_md, rc = render_full_markdown_report(target_path, findings, env_note, archetype)
+            if args.report_file:
+                rf = Path(args.report_file).resolve()
+                rf.parent.mkdir(parents=True, exist_ok=True)
+                rf.write_text(full_md, encoding="utf-8")
+                print(f"体检报告已成功写入：{rf}")
+            if args.report or not args.report_file:
+                print(full_md)
+            return rc
+        except Exception as e:  # skill-doctor: allow
+            print(f"生成检测报告失败: {e}", file=sys.stderr)
+            return 1
 
     if args.offline_fallback:
         created_file = analyzer.generate_offline_pitfalls(force=args.force)
@@ -914,26 +977,37 @@ def main() -> int:
             "domain": domain,
             "status": "AWAITING_SEARCH_AND_PITFALLS",
             "target_artifact": f"references/{analyzer.skill_name}-pitfalls.md",
+            "deep_read_mandate": "严禁走马观花仅看摘要！必须挑选代表性权威规范与开源代码，调用 read_url_content 深入阅读全文，并在会话中公开披露已阅读来源与提炼出的实战见解。",
             "queries": queries,
+            "executed_queries": [],
+            "visited_sources": [],
+            "fringe_findings": [],
         }
         task_file.write_text(json.dumps(task_data, ensure_ascii=False, indent=2), encoding="utf-8")
 
         print("\n" + "=" * 70)
-        print("       skill-doctor 四维深水区联网检索矩阵 (Deep Domain Research Matrix)")
+        print("    skill-doctor 四维深水区十二组多角度立体联网检索矩阵 (12-Query Matrix)")
         print("=" * 70)
         print(f"目标技能: {analyzer.skill_name}")
         print(f"架构形态: [{arch_code}] {arch_desc}")
         print(f"提炼领域: {domain}")
         print(f"任务状态: [已锁定] 已在目标目录生成 .doctor/research-task.json")
         print("-" * 70)
-        print("【物料强门禁要求】必须执行以下 4 维深水区挖掘（多源对标与可执行探针），")
-        print(f"并将挖掘知识成果落盘至 references/{analyzer.skill_name}-pitfalls.md 以核销该任务单:\n")
+        print("【三层立体挖掘执行准则】")
+        print("  1. 广度铺开：覆盖 12 组多角度检索，重点挖掘【冷门长尾探索池】中的反直觉隐患；")
+        print("  2. 深度穿透：严禁仅看搜索摘要！强制精读 Top 权威来源全文；")
+        print("  3. 过程透明：在会话中公开检索词、已读 URL 列表与提炼出的实战避坑见解；")
+        print(f"  4. 物料强门禁：成果落盘至 references/{analyzer.skill_name}-pitfalls.md 解开任务单锁。\n")
+        curr_dim = ""
         for q in queries:
-            print(f"【{q['dimension']}】")
-            print(f"  检索 Query: {q['query']}")
-            print(f"  挖掘目标: {q['goal']}\n")
+            if q['dimension'] != curr_dim:
+                curr_dim = q['dimension']
+                print(f"\n### 【{curr_dim}】")
+            print(f"  - [{q.get('sub_category', '检索')}] Query: {q['query']}")
+            print(f"    目标: {q['goal']}")
+        print("\n" + "-" * 70)
         print("【三级弹性策略】")
-        print("  - Tier 1 全网在线：调用联网工具执行上述 4 维检索（深度对标 GitHub 同类开源技能）；")
+        print("  - Tier 1 全网在线：调用联网工具执行上述 12 组检索与深度穿透阅读；")
         print("  - Tier 2 定向白名单：弱网环境下定向检索 site:github.com；")
         print(f"  - Tier 3 离线降级：无网或搜索受限时，运行 python scripts/evolve.py {analyzer.skill_name} --offline-fallback 自动生成启发式物料。\n")
         print("=" * 70 + "\n")

@@ -138,8 +138,11 @@ python scripts/audit.py path/to/your-skill --dynamic
 # 输出机器可读 JSON 格式（供 CI 流水线消费）
 python scripts/audit.py path/to/your-skill --json
 
-# 输出 GitHub Markdown 表格格式
-python scripts/audit.py path/to/your-skill --markdown
+# 输出结构化、全透明的《AI Agent 技能全方位体检与质量检测报告》Markdown
+python scripts/audit.py path/to/your-skill --report
+
+# 将完整的体检报告写入指定文件（供归档或评审）
+python scripts/audit.py path/to/your-skill --report-file DOCTOR_REPORT.md
 
 # --- 🚀 迭代进化引擎 (Skill Evolution Engine) ---
 # 1. 评估技能形态与进化度，计算 SEI (0-100) 并输出雷达分析

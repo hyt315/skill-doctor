@@ -28,16 +28,16 @@ description: 审查与迭代任意 AI Agent 技能目录（SKILL.md/scripts/refe
       👉 动作：执行 `python scripts/evolve.py <目标目录> --analyze` 查看 SEI 得分；执行 `python scripts/audit.py <目标目录> --dynamic` 校验退出码。
 - [ ] 4. **负向破坏与实战通病核验**  
       👉 动作：按 `references/审查与进化方法论.md#阶段-1全方位现状诊断只读体检` 抽查负向夹具 (DY002)；读取 `references/坑库.md` 逐条核验未自动化项。
-- [ ] 5. **诊断事实卡与阶段导航交付**  
-      👉 动作：输出 `audit-report.txt` 与分层事实卡，附带当前进度与后续可选操作指引。**【断点】若用户仅要求体检/找茬/回归，交付后在此结案。**
+- [ ] 5. **检测报告交付与阶段导航公开**  
+      👉 动作：执行 `python scripts/audit.py <目标目录> --report`，在会话中完整公开输出五大系统检测明细与分层事实卡（若需归档加 `--report-file`）。**【断点】若用户仅要求体检/找茬/回归，交付后在此结案。**
 
 ### 阶段 2：方案设计与深水区挖掘
 - [ ] 1. **生成进阶方案与待修清单**  
       👉 动作：执行 `python scripts/evolve.py <目标目录> --plan`，自动聚合阶段 1 查出的弱引用与结构缺陷为修复清单。
-- [ ] 2. **提炼检索矩阵并落盘工单锁**  
-      👉 动作：执行 `python scripts/evolve.py <目标目录> --research-plan`，提取核心词并落盘 `.doctor/research-task.json`。
-- [ ] 3. **多源深度挖掘与弹性降级（核心物料门禁）**  
-      👉 动作：对标 GitHub 同类技能、开源标杆、规范与踩坑，经可执行探针核验后落盘至 `references/<domain>-pitfalls.md`；若无网或受限，执行 `python scripts/evolve.py <目标目录> --offline-fallback` 自动注入启发式物料。未落盘产物前，严禁进入阶段 3！
+- [ ] 2. **提炼立体检索矩阵并落盘工单锁**  
+      👉 动作：执行 `python scripts/evolve.py <目标目录> --research-plan`，提炼 12 组多角度检索矩阵并落盘 `.doctor/research-task.json`。
+- [ ] 3. **三层立体挖掘、深度穿透精读与过程公开**  
+      👉 动作：执行 12 组立体检索（对标 GitHub 同类技能、开源标杆、RFC 规范与【冷门长尾探索池】）；挑选代表性权威来源调用 `read_url_content` 精读全文；在会话中公开披露检索词、已读 URL 列表与避坑提炼；成果落盘至 `references/<domain>-pitfalls.md`（若无网执行 `python scripts/evolve.py <目标目录> --offline-fallback`）。未落盘产物前，严禁进入阶段 3！
 
 ### 阶段 3：处方施工与结构治理（代码与文档改造）
 - [ ] 1. **消灭弱引用 (LK005 治理)**  
@@ -46,14 +46,14 @@ description: 审查与迭代任意 AI Agent 技能目录（SKILL.md/scripts/refe
       👉 动作：为声明的前置工序编写脚本级物料断言，缺失中间产物直接退出 (rc=1)，杜绝 AI 偷懒跳步。
 - [ ] 3. **形态适配脚手架注入**  
       👉 动作：CLI/HYBRID 型执行 `python scripts/evolve.py <目标目录> --scaffold-test`（注入 AST+负向夹具）；PROMPT 型执行 `python scripts/evolve.py <目标目录> --scaffold-prompt`（注入 evals 评测集）；或 `--scaffold-all`。
-- [ ] 4. **只读与治理解耦 (Zero-Mutation)**  
-      👉 动作：读取 `references/审查与进化方法论.md#3-只读与治理解耦铁律-zero-mutation`，排查诊断 100% 只读；破坏性修复与重写必须出具清单，经用户明确授权后手动执行。
+- [ ] 4. **只读解耦与改造 Diff 清单公开 (Zero-Mutation)**  
+      👉 动作：读取 `references/审查与进化方法论.md#3-只读与治理解耦铁律-zero-mutation`，排查诊断 100% 只读；在会话中公开改造 Diff 清单与依据，破坏性修复与重写必须出具清单，经用户明确授权后手动执行。
 
 ### 阶段 4：闭环回归与终审验收
 - [ ] 1. **全链路回归验证**  
       👉 动作：重新执行阶段 1 的全套诊断（`audit.py --dynamic` 与 `evolve.py --analyze`），断言静态规则 0 FAIL，弱引用清零，SEI $\ge 85$。
-- [ ] 2. **工程卫生清理与交付**  
-      👉 动作：物理删除 `audit-report.txt` 等测试临时副产物，保持代码库零污染；汇总交付分层事实卡。
+- [ ] 2. **工程卫生清理与 Baseline 差分公开**  
+      👉 动作：在会话中公开前后差分对比表 (Baseline Diff)；物理删除 `audit-report.txt` 等测试临时副产物，保持代码库零污染；汇总交付分层事实卡。
 
 ### 交付成果事实卡与阶段导航
 

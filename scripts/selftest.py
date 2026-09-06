@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import ast
+import json
 import subprocess
 import sys
 import tempfile
@@ -457,13 +458,23 @@ def main() -> int:
             raise RuntimeError(f"evolve --scaffold-all 应生成完整脚手架：\n{out_all}")
         checks += 1
 
-        # 7. evolve --research-plan 验证四维深水区检索生成（含 GitHub 同类技能对标）
+        # 7. evolve --research-plan 验证四维深水区检索生成（含 GitHub 同类技能对标与 12 组立体矩阵）
         rc_res, out_res = run_evolve(scaffold_all_skill, "--research-plan")
         if (rc_res != 0 or
-            "四维深水区联网检索矩阵" not in out_res or
+            "四维深水区" not in out_res or
+            "十二组多角度立体联网检索矩阵" not in out_res or
             "GitHub 同类开源技能标杆" not in out_res or
             "底层原理与权威规范" not in out_res):
             raise RuntimeError(f"evolve --research-plan 应输出四维检索矩阵：\n{out_res}")
+        checks += 1
+
+        # 7a. 验证 12 组检索任务工单锁包含 deep_read_mandate
+        task_json_file = scaffold_all_skill / ".doctor" / "research-task.json"
+        if not task_json_file.is_file():
+            raise RuntimeError("未找到 .doctor/research-task.json 任务工单锁")
+        task_data = json.loads(task_json_file.read_text(encoding="utf-8"))
+        if len(task_data.get("queries", [])) != 12 or "deep_read_mandate" not in task_data:
+            raise RuntimeError(f"研究工单锁必须包含 12 组多角度检索与 deep_read_mandate：\n{task_data}")
         checks += 1
 
         # 7b. evolve --offline-fallback 验证 Tier-3 离线启发式降级生成
@@ -507,6 +518,27 @@ def main() -> int:
             "[PROMPT]" not in out_pe or
             "综合进化指数 (SEI): 100 / 100" not in out_pe):
             raise RuntimeError(f"evolve.py 应自适应给予合规 PROMPT 技能 100/100：\n{out_pe}")
+        checks += 1
+
+        # 11. 验证 audit.py --report 与 --report-file 完整 Markdown 检测报告生成
+        rc_rep, out_rep = run_audit(good, "--report")
+        if rc_rep != 0 or "AI Agent 技能全方位体检与质量检测报告" not in out_rep or "综合健康指数与体检结论" not in out_rep:
+            raise RuntimeError(f"audit.py --report 应生成完整 Markdown 报告：\n{out_rep}")
+        checks += 1
+
+        custom_report_file = tmp / "custom-doctor-report.md"
+        rc_rf, out_rf = run_audit(good, "--report-file", str(custom_report_file))
+        if rc_rf != 0 or not custom_report_file.is_file():
+            raise RuntimeError(f"audit.py --report-file 应落盘报告文件：\n{out_rf}")
+        report_content = custom_report_file.read_text(encoding="utf-8")
+        if "AI Agent 技能全方位体检与质量检测报告" not in report_content:
+            raise RuntimeError("落盘的体检报告内容不完整")
+        checks += 1
+
+        # 12. 验证 evolve.py --report 输出结构化检测报告
+        rc_ev_rep, out_ev_rep = run_evolve(good, "--report")
+        if rc_ev_rep != 0 or "AI Agent 技能全方位体检与质量检测报告" not in out_ev_rep:
+            raise RuntimeError(f"evolve.py --report 应输出检测报告：\n{out_ev_rep}")
         checks += 1
 
     print(f"SELFTEST PASS ({checks} checks)")

@@ -138,8 +138,11 @@ python scripts/audit.py path/to/your-skill --dynamic
 # Output machine-readable JSON (for CI pipelines)
 python scripts/audit.py path/to/your-skill --json
 
-# Output GitHub Markdown table
-python scripts/audit.py path/to/your-skill --markdown
+# Output structured, transparent Markdown Health Inspection Report
+python scripts/audit.py path/to/your-skill --report
+
+# Save complete inspection report to specified Markdown file
+python scripts/audit.py path/to/your-skill --report-file DOCTOR_REPORT.md
 
 # --- 🚀 Skill Evolution Engine ---
 # 1. Profile skill archetype and compute Skill Evolution Index (SEI 0-100)
