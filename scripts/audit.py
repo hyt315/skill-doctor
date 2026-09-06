@@ -763,7 +763,7 @@ REPAIR_HINTS = {
     "LK002": "补齐缺失脚本或从文档删掉该命令",
     "LK005": "给该 reference 的链接补上读取时机（如'做 X 前先读 Y：Z 在里面'），并说明为什么值得读（坑 27）",
     "SEC001": "密钥移到环境变量/.private（并入 .gitignore），清洗历史",
-    "DY001": "补回归入口（CLI型补 selftest.py/tests/，纯提示词型运行 evolve.py --scaffold-prompt 补 evals/），参考审查方法论.md",
+    "DY001": "补回归入口（CLI型补 selftest.py/tests/，纯提示词型运行 evolve.py --scaffold-prompt 补 evals/），参考审查与进化方法论.md",
     "DY003": "修 selftest 本身或其夹具，退出码与结论文本对齐",
     "CK001": "统一各文件阈值数值，或抽公共常量/单一来源文件，其余处指针引用",
     "EN006": "定位并删除污染字节（扫 \\x00 等控制字符），重存干净 UTF-8 后用宿主读取工具复验；负向夹具注入须在 ASCII 边界（坑 29）",
@@ -798,7 +798,7 @@ def main() -> int:
     check_engineering(files, root, skill_text, findings)
     check_dynamic(root, findings, args.dynamic)
 
-    mode = "静态+动态（selftest 已实跑）" if args.dynamic else "静态层（动态实跑与负向用例见审查方法论.md）"
+    mode = "静态+动态（selftest 已实跑）" if args.dynamic else "静态层（动态实跑与负向用例见审查与进化方法论.md）"
     env_note = f"环境：{sys.version.split()[0]} / {mode}"
     report, rc = render_report(root, findings, env_note, archetype)
     

@@ -2,6 +2,14 @@
 
 本项目采用 [Conventional Commits](https://www.conventionalcommits.org/) 格式记录变更。
 
+## [2.1.4] - 2026-09-06
+
+### 🧹 Refactor: 合并审查与进化双方法论、消除形态重叠并精简 references 目录
+
+- **方法论体系合流 (`references/审查与进化方法论.md`)**：将原《审查方法论》与《技能迭代进化方法论》深度合并为单一权威工程手册，消除五大形态定义的重复说明，剔除学术文献致谢与纸面理论，文档体积削减 53.6%（从 17.7KB 压至 8.2KB）；
+- **清理废弃参考文件**：彻底删除 `references/审查方法论.md` 与 `references/技能迭代进化方法论.md`，`references/` 参考文件总数精简至 3 个；
+- **全链指针联动更新**：同步更新 `SKILL.md`、`scripts/audit.py`、`README.md` 与 `README.en.md` 中的引用指针，所有自测门禁与 AST 校验持续全绿。
+
 ## [2.1.3] - 2026-09-06
 
 ### 🧹 Refactor: 深度减负瘦身、剔除历史叙事冗余与控制台输出降噪

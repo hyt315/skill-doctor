@@ -193,8 +193,7 @@ python scripts/selftest.py
 |---|---|---|---|
 | 📋 [**Static Rules Catalog (`静态规则清单.md`)**](references/静态规则清单.md) | 50+ industrial rule definitions, origins, and repair paths | When diagnosing audit warnings and failures | 4 mins |
 | 🛡️ [**Pitfalls Database (`坑库.md`)**](references/坑库.md) | 50+ curated anti-patterns (Symptom → Cause → Fix → Prevention) | When auditing complex pipelines & edge cases | 5 mins |
-| 🩺 [**Audit Methodology (`审查方法论.md`)**](references/审查方法论.md) | 4 archetypes, negative fixtures, audit-to-evolve bridge & healing workflow | When writing selftests or major refactorings | 4 mins |
-| 🧬 [**Evolution Methodology (`技能迭代进化方法论.md`)**](references/技能迭代进化方法论.md) | 5-stage evolution paradigm, SEI metric, tooling elevation & zero-mutation | When designing or evolving agent skills | 5 mins |
+| 🩺 [**Audit & Evolution Methodology (`审查与进化方法论.md`)**](references/审查与进化方法论.md) | 5 archetypes, negative fixtures, healing workflow, 5-stage paradigm & SEI metric | When writing selftests, deep audit & evolving skills | 5 mins |
 
 ---
 
@@ -226,9 +225,8 @@ skill-doctor/
 │   └── selftest.py                   # Automated regression test runner (28 checks)
 └── references/                       # Rule catalog, 50+ pitfalls & methodology
     ├── 静态规则清单.md                # 50+ Industrial rules overview
-    ├── 坑库.md                        # 50+ Real-world pitfalls (incl. pitfalls 44-50)
-    ├── 审查方法论.md                  # 4 Archetypes & audit-to-evolve bridge
-    └── 技能迭代进化方法论.md          # 5-Stage evolution paradigm & SEI model
+    ├── 坑库.md                        # 50+ Real-world pitfalls (incl. pitfalls 44-52)
+    └── 审查与进化方法论.md            # 5 Archetypes, negative fixtures, healing & 5-stage paradigm
 ```
 
 ---
