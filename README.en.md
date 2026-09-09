@@ -43,7 +43,7 @@ Your AI Agent skill runs and demos look great — but is it truly reliable and p
 | 🌐 **4D Multi-Source Benchmark Matrix** | Generates targeted queries for Peer Agent Skills on GitHub, Top OSS Repos, Official Specs/RFCs, and Killer Pitfalls; supports executable AST probes and Tier-3 offline fallback | Benchmarks against state-of-the-art skills and ensures robust execution even in offline environments |
 | 🔍 **50+ Comprehensive Static Rules** | Covers FM structure, LK/AS links & assets, SF silent failures, SEC security, EN/PL cross-platform, CK/TC prompt health | Traceable rule IDs intercepting CRLF, Token URLs, consecutive hyphens, broad exceptions, and dead links |
 | 🧬 **Skill Evolution Engine (`evolve.py`)** | Adaptive SEI index (0-100), 4-Phase Closed-Loop Pipeline, automated evolution plans (`--plan`), and tailored scaffolding (`--scaffold-test` / `--scaffold-prompt` / `--scaffold-all`) | Upgrades skills into robust multi-file architectures with genuine test suites |
-| 🏃 **Dynamic Execution Verification** | Executes target skill's actual `selftest.py` or `evals/` test suite to verify exit code semantics and genuine test passes | Eliminates false confidence from pure text inspections |
+| 🏃 **Dynamic Execution Verification** | Explicitly executes `selftest.py` and checks exit semantics; tests/evals/Makefile entries are detected but must be run separately | Distinguishes available, unexecuted, and passing tests |
 | 🎯 **Negative Destructive Sampling** | Injects invalid/corrupted test samples to verify that guardrails truly block bad inputs | Eliminates dangerous "guards that exist in name only" |
 | 🧠 **50+ Real-World Pitfalls** | Curated catalog of anti-patterns collected across hundreds of skill audits (Symptom → Cause → Fix → Prevention) | Consolidates best practices to prevent repeated errors |
 | 📄 **Multi-Format Export & Auto-Fix** | Supports ANSI console summary, `--json` machine-readable output, and `--markdown` GitHub tables | Ready for CI pipelines with actionable code fix snippets |
@@ -77,8 +77,8 @@ Verification (Negative Fixtures & AST)| 10         | 20
 ```
 [Input: Target AI Agent Skill directory]
                          │
-      [Step 0: 4-Archetype Architectural Profiling]
-      Identify: Pure Prompt / CLI Tool / MCP Protocol / Multi-Stage Pipeline
+      [Step 0: 5-Archetype Architectural Profiling]
+      Identify: Pure Prompt / CLI Tool / MCP Protocol / Multi-Stage Pipeline / Hybrid
                          │
       [Step 1: 50+ Full-Spectrum Static Rules Scan]
       Intercept broken assets / broad exceptions / Token URLs / CRLF line endings
@@ -93,7 +93,7 @@ Verification (Negative Fixtures & AST)| 10         | 20
       Audit against common traps, state persistence, and command drift
                          │
       [Step 5: Report Generation & Actionable Fix Hints]
-      Output audit-report.txt / --json / --markdown with phased repair paths
+      Output stdout / --json / --markdown; explicitly save with --report-file
                          │
       [Step 6: SEI Skill Evolution & Scaffolding (evolve.py)]
       Compute 5D maturity index, output Evolution Plan Markdown & scaffold files
@@ -129,7 +129,7 @@ gh skill install hyt315/skill-doctor skill-doctor --agent claude-code --scope us
 ### Option D: Run directly in terminal as a CLI
 
 ```powershell
-# Run static audit on any skill (generates audit-report.txt)
+# Run a static audit (stdout only; no implicit report file)
 python scripts/audit.py path/to/your-skill
 
 # Include dynamic selftest run
@@ -148,8 +148,11 @@ python scripts/audit.py path/to/your-skill --report-file DOCTOR_REPORT.md
 # 1. Profile skill archetype and compute Skill Evolution Index (SEI 0-100)
 python scripts/evolve.py path/to/your-skill --analyze
 
-# 2. Extract domain keywords and generate 4D multi-source research queries (Peer Skills / OSS / RFC / Pitfalls)
+# 2. Preview research candidates without creating a task
 python scripts/evolve.py path/to/your-skill --research-plan
+
+# Explicitly save the task, preserving same-domain progress
+python scripts/evolve.py path/to/your-skill --research-plan --write-task
 
 # If in an offline or search-restricted environment, activate Tier-3 offline fallback scaffolding:
 python scripts/evolve.py path/to/your-skill --offline-fallback
@@ -166,17 +169,24 @@ python scripts/evolve.py path/to/your-skill --scaffold-prompt
 # 6. Scaffold complete multi-file architecture (tests/ + references/fact-card.md baseline)
 python scripts/evolve.py path/to/your-skill --scaffold-all
 
-# Run skill-doctor's own regression test
-python scripts/selftest.py
+# Run regressions (includes selftest and trigger evaluation once)
+python -B -m unittest discover -s tests -v
 ```
 
 ---
 
 ## 🔒 Safety & Read-Only Principles
 
-- **Strictly Read-Only**: Analysis reads target skill files without modifying or overwriting any code;
-- **Zero Network Calls**: All AST and regex rules run entirely offline with zero data leakage;
-- **Sandboxed Execution**: Dynamic tests only run when `--dynamic` is explicitly supplied.
+- **Read-only defaults**: Static audits, analysis, and research previews do not write to the target. Report export, task persistence, offline drafts, and scaffolding require explicit options.
+- **Local analysis**: Regex and syntax checks run offline. Agent-led research is optional and selected for relevance, not a mandatory set of 12 searches.
+- **Dynamic execution is not a sandbox**: `--dynamic` directly runs target selftests, which may write files or access the network. Inspect the entry point first and use an authorized, safe environment. Set `--timeout 120` to bound waiting.
+- **Evidence-based results**: Dynamic status is `NOT_RUN`, `SKIPPED`, `PASS`, or `FAIL`. Unexecuted and failed tests are never labeled successful. SEI is a structural heuristic, not a release gate.
+
+### v2.5 CLI compatibility
+
+Audits no longer create `audit-report.txt` by default. Use `--report-file <path>` to save a report. `--stdout` remains compatible; `--json` can be combined with `--report-file` without log messages contaminating JSON. Console formats `--json`, `--markdown`, and `--report` are mutually exclusive.
+
+`--research-plan` now previews without writing. Add `--write-task` to persist progress; repeated runs preserve existing status and metadata for the same domain. Offline drafts do not prove research is complete, and generated scaffolds do not replace domain-specific tests.
 
 ---
 
@@ -216,14 +226,15 @@ skill-doctor/
 ├── CONTRIBUTING.md                   # Contribution guide
 ├── CODE_OF_CONDUCT.md                # Code of conduct
 ├── SECURITY.md                       # Security policy
-├── SUPPORT.md                        # Support channels
 ├── manifest.json                     # Skill manifest
 ├── agents/                           # Multi-agent metadata
 ├── assets/                           # Visual assets
 │   └── banner.svg                    # Vector SVG Hero Banner
 ├── evals/                            # Trigger eval dataset
 ├── tests/                            # Unit tests & AST syntax validation
-│   └── test_skill.py                 # Standard unit test entry (asserting AST syntax integrity)
+│   ├── test_audit.py                 # Read-only, report and dynamic status regressions
+│   ├── test_evolve.py                # Research state and scaffold regressions
+│   └── test_skill.py                 # AST and existing selftest (includes trigger evaluation)
 ├── scripts/
 │   ├── audit.py                      # Core audit engine (5 archetypes + 40+ rules + CLI export)
 │   ├── evolve.py                     # Skill evolution engine (SEI radar + roadmap + scaffold)

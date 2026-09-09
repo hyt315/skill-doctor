@@ -18,5 +18,5 @@ jobs:
           python-version: "3.12"
       - name: Self static audit
         run: python scripts/audit.py .
-      - name: Regression tests
-        run: python scripts/selftest.py
+      - name: Regression tests (includes selftest and trigger evaluation)
+        run: python -B -m unittest discover -s tests -v

@@ -15,9 +15,8 @@ Thank you for considering contributing! This document outlines the process.
 2. **Create a branch**: `git checkout -b feature/your-feature`
 3. **Make changes**: Follow existing code style and conventions
 4. **Regression test** (required before any PR):
-   - `python scripts/selftest.py` — good fixtures green, bad fixtures caught per rule
-   - `python scripts/trigger_eval.py` — description trigger families
-   - `python scripts/audit.py .` — self static audit must stay clean
+   - `python -B -m unittest discover -s tests -v` — audit/evolution regressions, AST syntax checks, and selftest (already includes trigger families)
+   - `python scripts/audit.py .` — review static findings and explain remaining warnings
 5. **Commit**: Use [Conventional Commits](https://www.conventionalcommits.org/) format
 6. **Push**: `git push origin feature/your-feature`
 7. **Open a Pull Request**: Fill in the PR template completely

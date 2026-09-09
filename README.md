@@ -43,7 +43,7 @@
 | 🌐 **四维深水区多源对标矩阵** | 自动提炼技能领域核心词，输出 GitHub 同类 Agent 技能标杆、顶级开源库、官方规范/RFC与杀手坑 4 维对标指令；支持可执行探针与 Tier-3 离线降级 | 驱动技能深度对标开源标杆，并在断网/弱网环境下 100% 鲁棒跑通 |
 | 🔍 **50+ 项全维度静态规则** | 覆盖 FM 结构、LK/AS 链接与资产、SF 静默失效、SEC 深度安全、EN/PL 跨平台工程、CK/TC 口径与 Prompt 健康 | 逐项编号可追溯，精准拦截 CRLF、Token URL、连续连字符、宽捕获与断链 |
 | 🧬 **技能迭代进化引擎 (`evolve.py`)** | 形态自适应 SEI 指数 (0-100)、四阶段闭环流水线、演进方案自动生成 (`--plan`)、专属脚手架注入 (`--scaffold-test` / `--scaffold-prompt` / `--scaffold-all`) | 驱动技能从脆弱的单文件或浅层说明升级为工业级 multi-file 系统 |
-| 🏃 **动态实跑真实验证** | 实际拉起并运行被审技能的自测脚本（`selftest.py`）或评测集（`evals/`），核验退出码语义诚实度 | 杜绝靠纯文本检查产生的虚假安全感 |
+| 🏃 **动态执行验证** | 显式执行被审技能的 `selftest.py` 并核验退出码；tests/evals/Makefile 仅发现入口，需另行执行 | 区分入口存在、未运行和实际通过 |
 | 🎯 **负向破坏用例抽查** | 针对安全与质量门禁构造破坏样本，验证拦截门是否真的会阻断违规输入 | 专抓「门名义存在、实际放行」的最危险静默失效 |
 | 🧠 **50+ 条真实通病坑库** | 从数百次真实技能审查与重构实战中沉淀的典型坑库（现象 → 根因 → 修复 → 预防） | 持续沉淀最佳实践，避免重蹈覆辙 |
 | 📄 **多格式导出与自愈建议** | 支持 ANSI 控制台高亮看板、`--json` 机器可读、`--markdown` GitHub 表格导出 | 自带一键修复代码建议，无缝集成 CI 流水线 |
@@ -77,8 +77,8 @@ Verification (负向破坏与AST语法门禁)| 10         | 20
 ```
 [输入: 待审查的 AI 技能目录]
                        │
-      [Step 0: 四大技能架构形态精准识别]
-      判定: 纯提示词 / CLI 增强 / MCP 协议端 / 多阶段流水线
+      [Step 0: 五大技能架构形态识别]
+      判定: 纯提示词 / CLI 增强 / MCP 协议端 / 多阶段流水线 / 复合型
                        │
       [Step 1: 50+ 项全维度静态规则扫描]
       拦截结构缺陷 / 资产断链 / 宽捕获吞异常 / Token URL 泄露 / CRLF 换行
@@ -93,7 +93,7 @@ Verification (负向破坏与AST语法门禁)| 10         | 20
       对照历史高频通病，排查暗环节与状态机落盘缺陷
                        │
       [Step 5: 报告生成与 Actionable 自愈建议]
-      输出 audit-report.txt / --json / --markdown，给出分级修复路径
+      输出控制台 / --json / --markdown；--report-file 显式归档，给出分级修复路径
                        │
       [Step 6: SEI 技能进化与脚手架注入 (evolve.py)]
       计算五维成熟度得分，输出 Evolution Plan Markdown 并注入 Multi-File 骨架
@@ -129,7 +129,7 @@ gh skill install hyt315/skill-doctor skill-doctor --agent claude-code --scope us
 ### 方式 D：本地终端直接当 CLI 运行
 
 ```powershell
-# 对任意本地技能目录执行静态审查（生成 audit-report.txt）
+# 对任意本地技能目录执行静态审查（默认只输出，不落盘）
 python scripts/audit.py path/to/your-skill
 
 # 包含动态自测实跑
@@ -148,8 +148,11 @@ python scripts/audit.py path/to/your-skill --report-file DOCTOR_REPORT.md
 # 1. 评估技能形态与进化度，计算 SEI (0-100) 并输出雷达分析
 python scripts/evolve.py path/to/your-skill --analyze
 
-# 2. 提取该领域核心词，自动生成四维深水区多源对标矩阵 (同类技能/开源工程/RFC/踩坑)
+# 2. 按需预览四维检索候选（默认不创建工单）
 python scripts/evolve.py path/to/your-skill --research-plan
+
+# 显式记录任务进度，保留同领域已有结果
+python scripts/evolve.py path/to/your-skill --research-plan --write-task
 
 # 若在无网、弱网或搜索受限环境下，可一键激活 Tier-3 离线启发式降级生成避坑物料：
 python scripts/evolve.py path/to/your-skill --offline-fallback
@@ -166,17 +169,24 @@ python scripts/evolve.py path/to/your-skill --scaffold-prompt
 # 6. 一键注入完整多文件脚手架 (自测套件 + references/fact-card.md 标准事实卡)
 python scripts/evolve.py path/to/your-skill --scaffold-all
 
-# 运行 skill-doctor 自身的回归测试
-python scripts/selftest.py
+# 运行 skill-doctor 回归（包含自测与触发边界，不重复执行）
+python -B -m unittest discover -s tests -v
 ```
 
 ---
 
 ## 🔒 安全与只读原则
 
-- **严格纯只读**：审查过程只读分析目标技能代码，绝不擅自改动或重写被审项目的任何文件；
-- **零网络调用**：所有规则匹配与语法树分析均在本地离线完成，绝不向外上传代码或 Prompt；
-- **沙箱化自测**：动态实跑默认仅在传入 `--dynamic` 时显式触发，防止对生产环境产生未预期的副作用。
+- **只读默认**：静态审查、分析与检索计划默认不写目标目录；导出报告、持久化任务、离线草稿与脚手架通过显式参数执行；
+- **本地分析**：规则匹配与语法分析离线进行；Agent 的外部检索按需选择，不强制运行全部 12 组查询；
+- **动态执行不是沙箱**：`--dynamic` 直接运行目标 selftest，可能写文件或联网。先审阅入口，在已授权的安全环境执行，可用 `--timeout 120` 限制等待；
+- **如实报告**：动态状态区分 `NOT_RUN`、`SKIPPED`、`PASS`、`FAIL`，不会把未运行或失败的自测标成通过。SEI 仅是结构参考，不是发布硬门。
+
+### v2.5 命令兼容性
+
+默认不再生成 `audit-report.txt`，需要归档请显式指定 `--report-file <路径>`。`--stdout` 保留兼容；`--json` 可与 `--report-file` 同用，JSON 不混入保存提示。`--json`、`--markdown`、`--report` 三种控制台格式互斥。
+
+`--research-plan` 现在只读预览；需要记录进度时加 `--write-task`，同领域任务重跑保留已有状态与元数据。离线草稿不代表完成联网检索，脚手架也不能替代领域测试。
 
 ---
 
@@ -216,14 +226,15 @@ skill-doctor/
 ├── CONTRIBUTING.md                   # 社区贡献指南
 ├── CODE_OF_CONDUCT.md                # 行为准则
 ├── SECURITY.md                       # 安全策略
-├── SUPPORT.md                        # 支持渠道
 ├── manifest.json                     # 技能元数据清单
 ├── agents/                           # 多 Agent 平台元数据
 ├── assets/                           # 视觉资产
 │   └── banner.svg                    # 专属高清矢量 Hero Banner
 ├── evals/                            # 触发用例评测集
 ├── tests/                            # 单元测试与 AST 语法树自校验
-│   └── test_skill.py                 # 标准单元测试入口（含 AST 语法完整性断言）
+│   ├── test_audit.py                 # 只读、报告与动态状态回归
+│   ├── test_evolve.py                # 工单状态与生成脚手架回归
+│   └── test_skill.py                 # AST 与既有自测（含触发边界）
 ├── scripts/
 │   ├── audit.py                      # 核心审计引擎（五大形态 + 40+规则 + 多格式导出）
 │   ├── evolve.py                     # 迭代进化引擎（SEI五维评估 + 方案生成 + 脚手架注入）

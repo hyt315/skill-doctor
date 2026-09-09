@@ -371,8 +371,8 @@ def main() -> int:
 
         result = subprocess.run([sys.executable, str(AUDIT), str(bad)],
                                 capture_output=True, text=True, encoding="utf-8", errors="replace")
-        if result.returncode != 1 or not (bad / "audit-report.txt").is_file():
-            raise RuntimeError(f"默认模式应 FAIL 且落盘报告：rc={result.returncode}")
+        if result.returncode != 1 or (bad / "audit-report.txt").exists():
+            raise RuntimeError(f"默认模式应 FAIL 且不落盘报告：rc={result.returncode}")
         checks += 1
 
         # 坑 14 回归：SKILL.md 与 references 阈值口径打架 → CK001 WARN
@@ -459,7 +459,7 @@ def main() -> int:
         checks += 1
 
         # 7. evolve --research-plan 验证四维深水区检索生成（含 GitHub 同类技能对标与 12 组立体矩阵）
-        rc_res, out_res = run_evolve(scaffold_all_skill, "--research-plan")
+        rc_res, out_res = run_evolve(scaffold_all_skill, "--research-plan", "--write-task")
         if (rc_res != 0 or
             "四维深水区" not in out_res or
             "十二组多角度立体联网检索矩阵" not in out_res or

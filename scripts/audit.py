@@ -2,8 +2,8 @@
 """skill-doctor 静态检查器：对单个技能目录做五类静态审查。
 
 用法:
-  python audit.py <被审技能目录>          # 报告落 <目录>/audit-report.txt
-  python audit.py <被审技能目录> --stdout  # 只打印不落盘
+  python audit.py <被审技能目录>          # 默认只打印，不写入目标目录
+  python audit.py <被审技能目录> --report-file report.md  # 显式保存完整报告
 
 规则与级别以 references/静态规则清单.md 为唯一事实源（改动规则前先读其出处节）。
 零依赖，仅 Python 标准库。退出码：有 ERROR 为 1，否则 0。
@@ -68,6 +68,7 @@ ALLOW_MARK = "skill-doctor: allow"  # 行尾豁免标记，lint 惯例（同 esl
 class Findings:
     def __init__(self) -> None:
         self.items: list[tuple[str, str, str]] = []  # level, code, msg
+        self.dynamic_status = "NOT_RUN"
 
     def add(self, level: str, code: str, msg: str) -> None:
         self.items.append((level, code, msg))
@@ -525,7 +526,8 @@ def check_engineering(files: list[Path], root: Path, skill_text: str, findings: 
     bom_files = []
     for path in files:
         try:
-            head = path.open("rb").read(2)
+            with path.open("rb") as stream:
+                head = stream.read(2)
         except OSError:
             continue  # skill-doctor: allow（扫描器自身边界容错，非校验门）
         if head in (b"\xff\xfe", b"\xfe\xff"):
@@ -672,7 +674,8 @@ def find_regression_entry(root: Path) -> tuple[str, str, list[Path]]:
     return "none", "", []
 
 
-def check_dynamic(root: Path, findings: Findings, enabled: bool) -> None:
+def check_dynamic(root: Path, findings: Findings, enabled: bool, timeout: int = 600) -> None:
+    findings.dynamic_status = "SKIPPED" if enabled else "NOT_RUN"
     kind, desc, scan_files = find_regression_entry(root)
     if kind == "none":
         findings.add("FAIL", "DY001", "未找到回归入口（selftest/tests/evals/Makefile 均无，技能不可回归）")
@@ -705,13 +708,17 @@ def check_dynamic(root: Path, findings: Findings, enabled: bool) -> None:
         findings.add("INFO", "DY003", "动态实跑未开启（加 --dynamic 真跑 selftest）")
         return
 
-    started = time.time()
+    started = time.monotonic()
+    findings.dynamic_status = "FAIL"
     try:
-        result = subprocess.run([sys.executable, str(selftest)], cwd=str(root),
-                                capture_output=True, text=True, encoding="utf-8",
-                                errors="replace", timeout=600)
+        result = subprocess.run([sys.executable, "-B", str(selftest)], cwd=str(root),
+                                stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                                encoding="utf-8", errors="replace", timeout=timeout)
     except subprocess.TimeoutExpired:
-        findings.add("FAIL", "DY001", "selftest 实跑超时（600s），疑似挂起或过重")
+        findings.add("FAIL", "DY003", f"selftest 实跑超时（{timeout}s），疑似挂起或过重")
+        return
+    except OSError as exc:
+        findings.add("FAIL", "DY003", f"selftest 无法启动：{exc}")
         return
     out = (result.stdout or "") + (result.stderr or "")
     rc = result.returncode
@@ -719,7 +726,8 @@ def check_dynamic(root: Path, findings: Findings, enabled: bool) -> None:
     says_fail = bool(re.search(r"SELFTEST FAIL|RESULT FAIL", out))
     tail = " | ".join(out.strip().splitlines()[-3:])[:300]
     if rc == 0 and says_pass and not says_fail:
-        findings.add("OK", "DY003", f"selftest 实跑通过（rc=0，{time.time() - started:.1f}s）")
+        findings.dynamic_status = "PASS"
+        findings.add("OK", "DY003", f"selftest 实跑通过（rc=0，{time.monotonic() - started:.1f}s）")
     elif rc == 0 and says_fail:
         findings.add("FAIL", "DY003", f"rc=0 但报告 FAIL（退出码骗人）：{tail}")
     elif rc != 0 and not says_fail and not says_pass:
@@ -760,8 +768,12 @@ def render_report(root: Path, findings: Findings, env_note: str, archetype: tupl
     return "\n".join(lines) + "\n", 0
 
 
+def markdown_cell(value: object) -> str:
+    return str(value).replace("|", "&#124;").replace("\r", " ").replace("\n", "<br>")
+
+
 def render_full_markdown_report(root: Path, findings: Findings, env_note: str, archetype: tuple[str, str], dynamic_run: bool = False) -> tuple[str, int]:
-    """生成结构化、全透明的《AI Agent 技能全方位体检与质量检测报告》Markdown。"""
+    """渲染检测报告；动态结论来自实际 findings，不以请求执行代替执行成功。"""
     ok, warns, infos, fails = findings.counts()
     total = len(findings.items)
     rc = 1 if fails > 0 else 0
@@ -786,12 +798,12 @@ def render_full_markdown_report(root: Path, findings: Findings, env_note: str, a
     if skill_md.is_file():
         stext = skill_md.read_text(encoding="utf-8", errors="ignore")
         skill_lines = len(stext.splitlines())
-        skill_tokens = int(len(re.findall(r"[\u4e00-\u9fff]|[a-zA-Z0-9]+|[^\s\w]", stext)) * 0.6)
+        skill_tokens = estimate_tokens(stext)
         fm = extract_frontmatter(stext)
         if fm:
             desc_val = parse_field(fm, "description").strip()
             desc_chars = len(desc_val)
-        tc_count = len(re.findall(r"\b(必须|严禁|务必|坚决|绝不|强制|只读|MUST|SHALL|NEVER)\b", stext))
+        tc_count = len(HARD_DIRECTIVE_RE.findall(stext))
 
     # 3. 尝试读取 SEI 技能进化指数得分
     sei_score = None
@@ -806,8 +818,20 @@ def render_full_markdown_report(root: Path, findings: Findings, env_note: str, a
     except Exception:  # skill-doctor: allow
         pass
 
-    # 4. 综合评级判定
-    compliance_rate = (ok / total * 100) if total > 0 else 100.0
+    # DY findings describe regression coverage or execution, not static compliance.
+    static_items = [(level, code, msg) for level, code, msg in findings.items if not code.startswith("DY")]
+    static_ok = sum(level == "OK" for level, _, _ in static_items)
+    static_warn = sum(level == "WARN" for level, _, _ in static_items)
+    static_fail = sum(level == "FAIL" for level, _, _ in static_items)
+    assessed = static_ok + static_warn + static_fail
+    compliance_rate = static_ok / assessed * 100 if assessed else 0.0
+    dynamic_labels = {
+        "NOT_RUN": "⚪ NOT_RUN（未请求动态实跑）",
+        "SKIPPED": "⚪ SKIPPED（无可自动执行的 selftest，需手动回放）",
+        "PASS": "🟢 PASS（selftest 退出码与结论一致）",
+        "FAIL": "🔴 FAIL（selftest 失败、超时或无法启动）",
+    }
+    dynamic_label = dynamic_labels[findings.dynamic_status]
     if fails > 0:
         health_grade = "🔴 雏升阻塞 (FAIL 待修复)"
         overall_status = "FAIL"
@@ -815,7 +839,7 @@ def render_full_markdown_report(root: Path, findings: Findings, env_note: str, a
         health_grade = "🟡 进阶亚健康 (存在 WARN 隐患)"
         overall_status = "PASS (WITH WARNINGS)"
     else:
-        health_grade = "🟢 工业级成熟 (全门禁通过)"
+        health_grade = "🟢 已检查项通过（不代表未执行项目通过）"
         overall_status = "PASS"
 
     # 分类规则池
@@ -867,8 +891,8 @@ def render_full_markdown_report(root: Path, findings: Findings, env_note: str, a
         "",
         "| 检验层级 | 检验项目 | 实测数据 | 工业级基线 | 判定 |",
         "|---|---|---|---|:---:|",
-        f"| **L1 静态门禁** | 40+ 规则扫描 | {ok} OK / {warns} WARN / {fails} FAIL (合规率 {compliance_rate:.1f}%) | 0 FAIL, 0 阻塞 | {'🟢 PASS' if fails == 0 else '🔴 FAIL'} |",
-        f"| **L2 运行时鲁棒** | selftest / evals 动态实跑与负向拦截 | {'✅ 实跑通过' if dynamic_run else '⚪ 静态核验 (加 --dynamic 实跑)'} | 100% 退出码一致且真实拦截坏样本 | {'🟢 PASS' if fails == 0 else '🔴 FAIL'} |",
+        f"| **L1 静态门禁** | 静态规则扫描 | {static_ok} OK / {static_warn} WARN / {static_fail} FAIL (合规率 {compliance_rate:.1f}%) | 0 FAIL, 0 阻塞 | {'🟢 PASS' if static_fail == 0 else '🔴 FAIL'} |",
+        f"| **L2 动态执行** | selftest 实跑 | {dynamic_label} | rc=0 且结论一致；负向拦截需另核验 | {findings.dynamic_status} |",
     ]
 
     if sei_score is not None:
@@ -876,8 +900,8 @@ def render_full_markdown_report(root: Path, findings: Findings, env_note: str, a
     
     md.extend([
         "",
-        f"**【核心结论】**：当前技能静态扫描共有 **{total}** 项检查点，通过 **{ok}** 项，发现 **{warns}** 项告警，**{fails}** 项阻断错误。" +
-        ("各项指标均已达到工业级基线，未发现显著架构缺陷与静默失效风险。" if fails == 0 and warns == 0 else "存在待治理缺陷或告警，请参见后文处方清单。"),
+        f"**【核心结论】**：本次共记录 **{total}** 项检查结果，通过 **{ok}** 项，发现 **{warns}** 项告警，**{fails}** 项阻断错误。" +
+        "静态特征、动态退出码与 SEI 分数均不能单独证明业务正确性；未执行项不计为通过。",
         "",
         "---",
         "",
@@ -898,7 +922,7 @@ def render_full_markdown_report(root: Path, findings: Findings, env_note: str, a
         md.append("|:---:|---|---|")
         for level, code, msg in items:
             icon = "🟢" if level == "OK" else ("🟡" if level == "WARN" else ("🔴" if level == "FAIL" else "ℹ️"))
-            md.append(f"| {icon} `{level}` | `{code}` | {msg} |")
+            md.append(f"| {icon} `{level}` | `{code}` | {markdown_cell(msg)} |")
         md.append("")
 
     # 四、 缺陷诊断处方与治理清单
@@ -917,7 +941,7 @@ def render_full_markdown_report(root: Path, findings: Findings, env_note: str, a
         for level, code, msg in issue_items:
             priority = "🔴 P0 (阻塞)" if level == "FAIL" else "🟡 P1 (缺陷)"
             hint = REPAIR_HINTS.get(code, "参照 references/静态规则清单.md 对准规则修整代码或文档")
-            md.append(f"| {priority} | `{code}` | {msg} | {hint} |")
+            md.append(f"| {priority} | `{code}` | {markdown_cell(msg)} | {markdown_cell(hint)} |")
         md.append("")
         md.append("> [!NOTE]\n> 所有修复操作必须遵循 **Zero-Mutation（只读解耦）** 铁律，提供清晰可控的变更清单，经用户确认后再行实施。")
 
@@ -974,79 +998,74 @@ def run_static_audit(root: Path) -> Findings:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="skill-doctor 静态+动态检查器")
+    sys.dont_write_bytecode = True
+    parser = argparse.ArgumentParser(description="skill-doctor 静态+动态检查器（默认只读）")
     parser.add_argument("target", help="被审技能目录")
-    parser.add_argument("--stdout", action="store_true", help="只打印不落盘")
-
-    parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
-    parser.add_argument("--markdown", action="store_true", help="输出简要 Markdown 格式")
-    parser.add_argument("--report", action="store_true",
-                        help="输出结构化、全透明的《AI Agent 技能全方位体检与质量检测报告》Markdown")
-    parser.add_argument("--report-file", type=str, default=None,
-                        help="将完整的结构化体检报告写入指定的 Markdown 文件")
-
+    parser.add_argument("--stdout", action="store_true", help="兼容旧命令；默认已只打印不落盘")
+    formats = parser.add_mutually_exclusive_group()
+    formats.add_argument("--json", action="store_true", help="输出 JSON 格式")
+    formats.add_argument("--markdown", action="store_true", help="输出简要 Markdown 格式")
+    formats.add_argument("--report", action="store_true", help="输出完整 Markdown 检测报告")
+    parser.add_argument("--report-file", help="显式将完整报告保存到指定路径，可与 --json 同用")
     parser.add_argument("--dynamic", action="store_true",
-                        help="动态实跑被审技能 selftest（有副作用风险，确认安全后显式开启）")
+                        help="执行目标 selftest（非沙箱，有副作用风险，确认安全后开启）")
+    parser.add_argument("--timeout", type=int, default=600, help="动态实跑超时秒数（正整数，默认 600）")
     args = parser.parse_args()
+    if args.timeout <= 0:
+        parser.error("--timeout 必须为正整数")
 
     root = Path(args.target).resolve()
     if not root.is_dir():
-        print(f"ERROR: 目录不存在 {root}")
+        print(f"ERROR: 目录不存在 {root}", file=sys.stderr)
         return 2
 
     archetype = detect_archetype(root)
     findings = run_static_audit(root)
-    check_dynamic(root, findings, args.dynamic)
-
-    mode = "静态+动态（selftest 已实跑）" if args.dynamic else "静态层（动态实跑与负向用例见审查与进化方法论.md）"
-    env_note = f"环境：{sys.version.split()[0]} / {mode}"
+    check_dynamic(root, findings, args.dynamic, timeout=args.timeout)
+    env_note = f"环境：{sys.version.split()[0]} / 动态状态：{findings.dynamic_status}"
     report, rc = render_report(root, findings, env_note, archetype)
-    
+
+    full_md = None
+    if args.report or args.report_file:
+        full_md, _ = render_full_markdown_report(root, findings, env_note, archetype)
+        if args.report_file:
+            rf = Path(args.report_file).resolve()
+            try:
+                rf.parent.mkdir(parents=True, exist_ok=True)
+                rf.write_text(full_md, encoding="utf-8")
+            except OSError as exc:
+                print(f"ERROR: 无法保存报告 {rf}: {exc}", file=sys.stderr)
+                return 2
+            print(f"体检报告已成功写入：{rf}", file=sys.stderr)
+
     if args.json:
+        import json
         ok, warns, infos, fails = findings.counts()
-        total = len(findings.items)
         out_dict = {
             "target": root.name,
             "archetype": {"code": archetype[0], "description": archetype[1]},
             "result": "PASS" if fails == 0 else "FAIL",
-            "summary": {"total": total, "ok": ok, "warn": warns, "info": infos, "fail": fails},
+            "summary": {"total": len(findings.items), "ok": ok, "warn": warns, "info": infos, "fail": fails},
+            "dynamic": {"requested": args.dynamic, "status": findings.dynamic_status},
             "findings": [{"level": l, "code": c, "message": m} for l, c, m in findings.items]
         }
-        import json
         print(json.dumps(out_dict, ensure_ascii=False, indent=2))
-        return rc
-
-    if args.markdown:
+    elif args.markdown:
         ok, warns, infos, fails = findings.counts()
-        total = len(findings.items)
         md_lines = [
             f"## 🩺 技能审查报告：{root.name}",
             f"- **架构形态**: `[{archetype[0]}]` {archetype[1]}",
-            f"- **审查结论**: `RESULT {'PASS' if fails == 0 else 'FAIL'}` (通过 {ok}/{total}, WARN {warns}, FAIL {fails})",
-            "",
-            "| 级别 | 规则码 | 检查项 |",
-            "|---|---|---|"
+            f"- **审查结论**: `RESULT {'PASS' if fails == 0 else 'FAIL'}` (通过 {ok}/{len(findings.items)}, WARN {warns}, FAIL {fails})",
+            f"- **动态状态**: `{findings.dynamic_status}`",
+            "", "| 级别 | 规则码 | 检查项 |", "|---|---|---|"
         ]
         for l, c, m in findings.items:
-            md_lines.append(f"| {l} | `{c}` | {m} |")
+            md_lines.append(f"| {l} | `{c}` | {markdown_cell(m)} |")
         print("\n".join(md_lines))
-        return rc
-
-    if args.report or args.report_file:
-        full_md, report_rc = render_full_markdown_report(root, findings, env_note, archetype, dynamic_run=args.dynamic)
-        if args.report_file:
-            rf = Path(args.report_file).resolve()
-            rf.parent.mkdir(parents=True, exist_ok=True)
-            rf.write_text(full_md, encoding="utf-8")
-            print(f"体检报告已成功写入：{rf}")
-        if args.report or not args.report_file:
-            print(full_md)
-        return report_rc
-
-    print(report, end="")
-    if not args.stdout:
-        (root / "audit-report.txt").write_text(report, encoding="utf-8")
-        print(f"\n报告已写入 {root / 'audit-report.txt'}")
+    elif args.report:
+        print(full_md)
+    elif not args.report_file:
+        print(report, end="")
     return rc
 
 

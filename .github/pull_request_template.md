@@ -16,8 +16,7 @@
 
 ## Checklist
 
-- [ ] I have run `python scripts/selftest.py` (good green, bad caught)
-- [ ] I have run `python scripts/trigger_eval.py` (trigger families)
+- [ ] I have run `python -B -m unittest discover -s tests -v` (includes selftest and trigger families)
 - [ ] I have run `python scripts/audit.py .` (self audit clean)
 - [ ] I have updated relevant documentation
 - [ ] This PR is focused on a single logical change

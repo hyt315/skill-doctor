@@ -1,8 +1,8 @@
 {
   "name": "skill-doctor",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "owner": "personal",
-  "updated_at": "2026-09-06",
+  "updated_at": "2026-09-09",
   "review_cadence": "per-release",
   "status": "active",
   "maturity_tier": "production",

@@ -4,7 +4,8 @@
 用法:
   python evolve.py <技能目录> --analyze           # 运行五维进化度评估，计算 SEI (0-100)
   python evolve.py <技能目录> --plan              # 自动生成针对该技能的《迭代进阶方案》
-  python evolve.py <技能目录> --research-plan     # 提取领域关键词，生成四维深水区联网检索矩阵
+  python evolve.py <技能目录> --research-plan     # 只读预览四维深水区联网检索矩阵
+  python evolve.py <技能目录> --research-plan --write-task  # 显式保存任务并保留同领域进度
   python evolve.py <技能目录> --scaffold-test     # 一键生成符合规范的自测套件 (tests/ 与 selftest.py)
   python evolve.py <技能目录> --scaffold-prompt   # 一键生成纯提示词/认知型评测套件 (evals/trigger_cases.json)
   python evolve.py <技能目录> --scaffold-all      # 一键生成完整多文件脚手架 (自测套件 + references/fact-card.md)
@@ -51,7 +52,7 @@ MANIFEST = ROOT / "manifest.json"
 REFS_DIR = ROOT / "references"
 
 NAME_RE = r"^[a-z0-9]+(-[a-z0-9]+)*$"
-SEMVER_RE = r"^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+SEMVER_RE = r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
 TRIGGER_RE = re.compile(r"Use when|when a|适用于|当", re.I)
 FIRST_PERSON_RE = re.compile(r"\b(I can|I will|I\'ll|我可以|我会)\b")
 XML_BRACKET_RE = re.compile(r"[<>]")
@@ -82,7 +83,7 @@ if fm_match:
     fm = fm_match.group(1)
     name_m = re.search(r"^name:\s*(\S+)\s*$", fm, re.M)
     desc_m = re.search(r"^description:\s*(.+?)(?=\n[a-z\-]+:|\Z)", fm, re.S | re.M)
-    name_val = name_m.group(1) if name_m else ""
+    name_val = name_m.group(1).strip("\"'") if name_m else ""
     desc_val = desc_m.group(1).strip() if desc_m else ""
     check(name_ok(name_val) and name_val == ROOT.name, f"name invalid or != dir '{ROOT.name}'")
     check(desc_ok(desc_val), "description invalid (length/brackets/missing trigger)")
@@ -96,8 +97,8 @@ if MANIFEST.is_file():
 
 # 3. References Linkage Checks
 if REFS_DIR.is_dir():
-    linked = set(re.findall(r"references/[\w\-]+\.md", text))
-    actual = {f"references/{p.name}" for p in REFS_DIR.glob("*.md")}
+    linked = set(re.findall(r"references/[\w./\-]+\.md", text))
+    actual = {p.relative_to(ROOT).as_posix() for p in REFS_DIR.rglob("*.md")}
     orphans = actual - linked
     check(not orphans, f"orphan references: {sorted(orphans)}")
 
@@ -105,7 +106,9 @@ if REFS_DIR.is_dir():
 for p in ROOT.rglob("*"):
     if p.is_file() and p.suffix in (".md", ".py", ".ps1", ".sh", ".json"):
         s = p.read_text(encoding="utf-8", errors="ignore")
-        check(not PERSONAL_PATH_RE.search(s), f"personal path found in {p.relative_to(ROOT)}")
+        for line in s.splitlines():
+            if "skill-doctor: allow SEC002" not in line:
+                check(not PERSONAL_PATH_RE.search(line), f"personal path found in {p.relative_to(ROOT)}")
 
 # 5. DY002 Negative Fixtures (Assert verifier catches bad inputs)
 check(not name_ok("Bad_Name"), "negative: 'Bad_Name' should fail")
@@ -122,6 +125,7 @@ sys.exit(0 if not failures else 1)
 SELFTEST_CODE_TEMPLATE = r"""#!/usr/bin/env python3
 # Regression test runner for __NAME__ skill.
 # Runs test suite and validates syntax of internal scripts.
+import ast
 import shutil
 import subprocess
 import sys
@@ -135,13 +139,21 @@ def check_ps1_syntax(ps1_path: Path) -> bool:
     if pwsh and ps1_path.is_file():
         cmd = [
             pwsh, "-NoProfile", "-Command",
-            "$errors = $null; [System.Management.Automation.Language.Parser]::ParseFile('" + str(ps1_path) + "', [ref]$null, [ref]$errors); if ($errors.Count -gt 0) { exit 1 } else { exit 0 }"
+            "$errors = $null; [System.Management.Automation.Language.Parser]::ParseFile('" + str(ps1_path).replace("'", "''") + "', [ref]$null, [ref]$errors); if ($errors.Count -gt 0) { exit 1 } else { exit 0 }"
         ]
         proc = subprocess.run(cmd, capture_output=True, text=True)
         return proc.returncode == 0
     return True
 
 def main() -> int:
+    for directory in (ROOT / "scripts", ROOT / "tests"):
+        for source in sorted(directory.rglob("*.py")):
+            try:
+                ast.parse(source.read_bytes(), filename=str(source))
+            except (SyntaxError, ValueError, OSError) as exc:
+                print(f"FAIL: Python syntax check failed in {source}: {exc}", file=sys.stderr)
+                return 1
+
     test_runner = ROOT / "tests" / "test_skill.py"
     if not test_runner.is_file():
         print("FAIL: tests/test_skill.py not found", file=sys.stderr)
@@ -230,6 +242,8 @@ class SkillEvolutionAnalyzer:
     def __init__(self, target_dir: Path):
         self.target_dir = target_dir.resolve()
         self.skill_md = self.target_dir / "SKILL.md"
+        if not self.target_dir.is_dir() or not self.skill_md.is_file():
+            raise ValueError(f"目标必须是包含 SKILL.md 的技能目录: {self.target_dir}")
         self.scripts_dir = self.target_dir / "scripts"
         self.refs_dir = self.target_dir / "references"
         self.tests_dir = self.target_dir / "tests"
@@ -248,7 +262,7 @@ class SkillEvolutionAnalyzer:
                 name_m = re.search(r"^name:\s*(\S+)\s*$", fm, re.M)
                 desc_m = re.search(r"^description:\s*(.+?)(?=\n[a-z\-]+:|\Z)", fm, re.S | re.M)
                 if name_m:
-                    self.skill_name = name_m.group(1)
+                    self.skill_name = name_m.group(1).strip("\"'")
                 if desc_m:
                     self.description = desc_m.group(1).strip()
 
@@ -737,17 +751,17 @@ class SkillEvolutionAnalyzer:
 ## 四、技能所属专业领域深水区挖掘指引 (Domain Grounding)
 
 为让该技能摆脱泛泛常识，已自动提炼 **{name}** 的核心技术领域：`{domain}`。
-请在优化与丰富技能时，调用联网搜索工具依次执行以下 4 维深水区深度挖掘：
+请仅在外部知识影响当前决策时，选择以下 4 维候选查询中的相关项：
 
 {research_md}
-#### 挖掘成果沉淀建议（三层立体检索与深度穿透规范）
-1. **广度扇出与冷门长尾探索**：依次执行 12 组多角度立体检索，特别关注【冷门长尾探索池】中的边缘特异性隐患；
-2. **深度穿透阅读 (Deep Reading)**：严禁走马观花仅看搜索摘要！挑选 3~5 篇权威 RFC/官方白皮书与顶级开源代码，深入精读全文；
-3. **过程 100% 透明公开**：在会话中公开披露已执行的 Query 清单、深入阅读的来源 URL、以及从看似无关的资料中提炼出的实战价值；
-4. **可执行探针核验 (Sanity Probes)**：代码片段必须通过 `ast.parse` 或语法编译探针，废弃超过 2 年未更新的旧命令；
-5. **生产级隐蔽踩坑库**：在 `references/` 下新增 `{name}-pitfalls.md`，记录真实高发故障与反常识踩坑；
-6. **分层事实卡与正常基线**：在 `references/fact-card.md` 中规范客观指标正常范围与异常阈值；
-7. **离线弹性降级**：若处于无网环境或搜索受限，执行 `python scripts/evolve.py {name} --offline-fallback` 自动注入启发式物料解锁工序。
+#### 挖掘成果沉淀建议（按需执行）
+1. **相关性优先**：12 组查询是候选矩阵，不要求逐组执行；本地明确缺陷无需等待联网研究；
+2. **阅读原始来源**：针对关键结论读取相关官方文档或源码，不只依赖搜索摘要，也不固定篇数；
+3. **证据记录**：记录实际执行的 Query、已读 URL、适用版本、结论和仍未确认的事项；
+4. **代码核验**：先用 `ast.parse` 或对应解析器检查语法，再按风险验证真实行为；不以项目年龄代替兼容性判断；
+5. **资产沉淀**：仅在有复用价值时新增 `{name}-pitfalls.md`，区分实测缺陷、外部事实和启发式建议；
+6. **指标解释**：事实卡记录真实测量与适用基线；SEI 是结构参考，不是业务正确性或发布硬门；
+7. **离线处理**：说明未确认项；确需启发式草稿且有写入授权时才运行 `--offline-fallback`，它不证明研究完成。
 
 ---
 
@@ -805,13 +819,64 @@ class SkillEvolutionAnalyzer:
 
 ## 六、发版卫生与工程纪律
 
-1. **临时审计文件清理**：发版或提交前，必须物理清理所有 `audit-report.txt` 与临时日志文件，绝不污染 git 仓库树；
-2. **纯粹化 Release Notes**：发行版说明仅详细陈述业务与技术改进项，严禁包含任何审查或提示词元说明。
+1. **临时产物清理**：仅清理本次生成且确认无用的临时文件，保留用户已有文件和正式交付报告；
+2. **变更记录**：说明实质改进、兼容性变化与剩余限制；提交、推送和发布按用户实际授权分别执行。
 """
         return plan
 
+    def _validate_skill_name(self) -> None:
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", self.skill_name):
+            raise ValueError(f"不安全的技能名称: {self.skill_name!r}")
+
+    def _research_path(self, relative: str) -> Path:
+        path = self.target_dir / relative
+        if not path.resolve().is_relative_to(self.target_dir):
+            raise ValueError(f"研究输出路径不能位于技能目录之外: {path}")
+        return path
+
+    def _research_task(self, offline: bool = False) -> tuple[Path, dict]:
+        self._validate_skill_name()
+        domain, queries = self.generate_research_queries()
+        artifact = f"references/{self.skill_name}-pitfalls.md"
+        self._research_path(artifact)
+        task_file = self._research_path(".doctor/research-task.json")
+        task_data = {
+            "target_skill": self.skill_name,
+            "domain": domain,
+            "status": "AWAITING_SEARCH_AND_PITFALLS",
+            "target_artifact": artifact,
+            "deep_read_mandate": "按当前问题选择相关原始来源，使用宿主已有网页读取工具核验关键结论，记录 URL、适用版本与未确认事项；不要求固定查询或阅读数量。",
+            "queries": queries,
+            "executed_queries": [],
+            "visited_sources": [],
+            "fringe_findings": [],
+        }
+        if task_file.exists():
+            existing = json.loads(task_file.read_text(encoding="utf-8"))
+            if not isinstance(existing, dict):
+                raise ValueError(f"研究任务必须是 JSON 对象，原文件未修改: {task_file}")
+            if existing.get("domain") == domain:
+                task_data.update(existing)
+        if offline and task_data["status"] in (
+            "AWAITING_SEARCH_AND_PITFALLS", "OFFLINE_HEURISTIC_FALLBACK"
+        ):
+            task_data.update(
+                status="OFFLINE_HEURISTIC_FALLBACK",
+                target_artifact=artifact,
+                generation_mode="Tier-3 Offline Heuristic Fallback",
+            )
+        return task_file, task_data
+
+    def write_research_task(self) -> Path:
+        """Persist a plan without resetting same-domain research progress."""
+        task_file, task_data = self._research_task()
+        task_file.parent.mkdir(exist_ok=True)
+        task_file.write_text(json.dumps(task_data, ensure_ascii=False, indent=2), encoding="utf-8")
+        return task_file
+
     def scaffold_prompt(self, force: bool = False) -> list[Path]:
         """纯提示词/认知型技能脚手架注入：生成 evals/trigger_cases.json。"""
+        self._validate_skill_name()
         self.evals_dir.mkdir(exist_ok=True)
         target = self.evals_dir / "trigger_cases.json"
         if target.is_file() and not force:
@@ -821,6 +886,7 @@ class SkillEvolutionAnalyzer:
 
     def scaffold_test(self, force: bool = False) -> list[Path]:
         """确定性工具型技能脚手架注入：生成 tests/ 与 scripts/selftest.py。"""
+        self._validate_skill_name()
         created = []
         self.tests_dir.mkdir(exist_ok=True)
         test_skill = self.tests_dir / "test_skill.py"
@@ -847,17 +913,18 @@ class SkillEvolutionAnalyzer:
         return created
 
     def generate_offline_pitfalls(self, force: bool = False) -> Path:
-        """Tier-3 离线启发式降级：在无网环境下生成基础避坑知识库与事实卡，解除工单阻断。"""
+        """Tier-3 离线启发式降级：生成草稿并保留已有研究进度，不证明研究完成。"""
+        task_file, task_data = self._research_task(offline=True)
+        pitfalls_file = self._research_path(f"references/{self.skill_name}-pitfalls.md")
         self.refs_dir.mkdir(exist_ok=True)
-        pitfalls_file = self.refs_dir / f"{self.skill_name}-pitfalls.md"
         domain, _ = self.generate_research_queries()
         
         content = f"""# {self.skill_name} 核心避坑指南 (Tier-3 离线启发式降级生成)
 
 > [!NOTE]
 > 本文件由 `skill-doctor` 进化引擎的 **Tier-3 离线启发式降级机制** 自动生成。
-> 当前处于无网或检索受限环境，系统调用内置的通用专家知识库生成此基础防御物料，已解除工单强门禁阻断。
-> 建议在具备全网在线条件后，重新执行 12 组多角度立体检索以深化领域知识。
+> 这是通用启发式草稿，未执行联网研究，不构成领域事实验证或完成工单的证据。
+> 后续按具体问题补充相关原始来源与可复现测试，不要求运行全部候选查询。
 
 ---
 
@@ -898,28 +965,20 @@ class SkillEvolutionAnalyzer:
         if force or not pitfalls_file.is_file():
             pitfalls_file.write_text(content, encoding="utf-8")
 
-        # 更新或创建任务工单锁为降级完成状态
-        doctor_dir = self.target_dir / ".doctor"
-        doctor_dir.mkdir(exist_ok=True)
-        task_file = doctor_dir / "research-task.json"
-        task_data = {
-            "target_skill": self.skill_name,
-            "domain": domain,
-            "status": "OFFLINE_HEURISTIC_FALLBACK",
-            "target_artifact": f"references/{self.skill_name}-pitfalls.md",
-            "generation_mode": "Tier-3 Offline Heuristic Fallback",
-        }
+        task_file.parent.mkdir(exist_ok=True)
         task_file.write_text(json.dumps(task_data, ensure_ascii=False, indent=2), encoding="utf-8")
 
         return pitfalls_file
 
 
-def main() -> int:
+def _main() -> int:
+    sys.dont_write_bytecode = True
     parser = argparse.ArgumentParser(description="skill-doctor 技能迭代与进化引擎")
     parser.add_argument("path", nargs="?", default=".", help="目标技能目录路径 (默认当前目录)")
     parser.add_argument("--analyze", action="store_true", help="执行五维进化度量化评估，计算 SEI (0-100)")
     parser.add_argument("--plan", action="store_true", help="自动生成针对该技能的《迭代进阶方案》Markdown")
-    parser.add_argument("--research-plan", action="store_true", help="提炼该技能领域关键词，输出 12 组多角度立体联网检索矩阵")
+    parser.add_argument("--research-plan", action="store_true", help="只读输出 12 组多角度立体联网检索矩阵")
+    parser.add_argument("--write-task", action="store_true", help="与 --research-plan 合用，显式保存研究任务并保留同领域进度")
     parser.add_argument("--offline-fallback", action="store_true", help="在无网或弱网环境下，激活 Tier-3 离线启发式降级引擎一键生成基础避坑库与事实卡")
     parser.add_argument("--scaffold-test", action="store_true", help="一键生成符合规范的自测套件 (tests/ 与 selftest.py)")
     parser.add_argument("--scaffold-prompt", action="store_true", help="一键生成纯提示词型评测套件 (evals/trigger_cases.json)")
@@ -931,6 +990,15 @@ def main() -> int:
     parser.add_argument("--force", action="store_true", help="强制覆盖已存在的文件 (用于 scaffold)")
 
     args = parser.parse_args()
+    actions = (
+        args.analyze, args.plan, args.research_plan, args.offline_fallback,
+        args.scaffold_test, args.scaffold_prompt, args.scaffold_all,
+        args.report or bool(args.report_file),
+    )
+    if sum(actions) > 1:
+        parser.error("每次只能选择一个操作；请分别运行分析、研究、报告或脚手架命令")
+    if args.write_task and not args.research_plan:
+        parser.error("--write-task 必须与 --research-plan 合用")
     target_path = Path(args.path)
 
     if not target_path.is_dir():
@@ -961,29 +1029,15 @@ def main() -> int:
     if args.offline_fallback:
         created_file = analyzer.generate_offline_pitfalls(force=args.force)
         print(f"成功激活 Tier-3 离线启发式降级引擎，已生成避坑物料：\n  + {created_file}")
-        print("任务工单状态已更新为 [OFFLINE_HEURISTIC_FALLBACK]，物料门禁已解开，可进入阶段 3 施工。")
+        print("研究任务已保存；已有同领域研究元数据与完成状态予以保留。")
         return 0
 
     if args.research_plan:
         domain, queries = analyzer.generate_research_queries()
         arch_code, arch_desc = analyzer.detect_archetype()
 
-        # 写入轻量任务状态单锁 .doctor/research-task.json
-        doctor_dir = analyzer.target_dir / ".doctor"
-        doctor_dir.mkdir(exist_ok=True)
-        task_file = doctor_dir / "research-task.json"
-        task_data = {
-            "target_skill": analyzer.skill_name,
-            "domain": domain,
-            "status": "AWAITING_SEARCH_AND_PITFALLS",
-            "target_artifact": f"references/{analyzer.skill_name}-pitfalls.md",
-            "deep_read_mandate": "严禁走马观花仅看摘要！必须挑选代表性权威规范与开源代码，调用 read_url_content 深入阅读全文，并在会话中公开披露已阅读来源与提炼出的实战见解。",
-            "queries": queries,
-            "executed_queries": [],
-            "visited_sources": [],
-            "fringe_findings": [],
-        }
-        task_file.write_text(json.dumps(task_data, ensure_ascii=False, indent=2), encoding="utf-8")
+        if args.write_task:
+            analyzer.write_research_task()
 
         print("\n" + "=" * 70)
         print("    skill-doctor 四维深水区十二组多角度立体联网检索矩阵 (12-Query Matrix)")
@@ -991,13 +1045,16 @@ def main() -> int:
         print(f"目标技能: {analyzer.skill_name}")
         print(f"架构形态: [{arch_code}] {arch_desc}")
         print(f"提炼领域: {domain}")
-        print(f"任务状态: [已锁定] 已在目标目录生成 .doctor/research-task.json")
+        if args.write_task:
+            print("任务状态: 已保存 .doctor/research-task.json，同领域进度予以保留")
+        else:
+            print("任务状态: 只读预览，使用 --write-task 显式保存研究任务")
         print("-" * 70)
-        print("【三层立体挖掘执行准则】")
-        print("  1. 广度铺开：覆盖 12 组多角度检索，重点挖掘【冷门长尾探索池】中的反直觉隐患；")
-        print("  2. 深度穿透：严禁仅看搜索摘要！强制精读 Top 权威来源全文；")
-        print("  3. 过程透明：在会话中公开检索词、已读 URL 列表与提炼出的实战避坑见解；")
-        print(f"  4. 物料强门禁：成果落盘至 references/{analyzer.skill_name}-pitfalls.md 解开任务单锁。\n")
+        print("【按需检索与证据记录】")
+        print("  1. 12 组查询为候选矩阵，按当前问题相关性选择，不强制全部执行；")
+        print("  2. 用宿主已有工具阅读相关官方文档或源码，核验关键结论；")
+        print("  3. 记录实际查询、已读 URL、适用版本与未确认事项；")
+        print(f"  4. 有复用价值时保存到 references/{analyzer.skill_name}-pitfalls.md；工单本身不证明研究完成。\n")
         curr_dim = ""
         for q in queries:
             if q['dimension'] != curr_dim:
@@ -1007,7 +1064,7 @@ def main() -> int:
             print(f"    目标: {q['goal']}")
         print("\n" + "-" * 70)
         print("【三级弹性策略】")
-        print("  - Tier 1 全网在线：调用联网工具执行上述 12 组检索与深度穿透阅读；")
+        print("  - Tier 1 全网在线：检索相关查询并读取原始来源；")
         print("  - Tier 2 定向白名单：弱网环境下定向检索 site:github.com；")
         print(f"  - Tier 3 离线降级：无网或搜索受限时，运行 python scripts/evolve.py {analyzer.skill_name} --offline-fallback 自动生成启发式物料。\n")
         print("=" * 70 + "\n")
@@ -1087,6 +1144,14 @@ def main() -> int:
         print("\n【演化评估结论】各项指标均已达到工业级基线，未发现显著架构缺口。")
     print("=" * 70 + "\n")
     return 0
+
+
+def main() -> int:
+    try:
+        return _main()
+    except (OSError, ValueError) as exc:
+        print(f"错误: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
